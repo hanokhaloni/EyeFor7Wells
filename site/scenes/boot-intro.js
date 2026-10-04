@@ -239,9 +239,7 @@ function drawMark(c, i, appear, morph, opt) {
 function render() {
   const { L0, L1, W, H, COL } = S;
   const c = L0.ctx2d;
-  const o = L1.ctx2d;
   c.clearRect(0, 0, W, H);
-  o.clearRect(0, 0, W, H);
   c.textBaseline = 'middle';
 
   const beat = S.beat;
@@ -490,17 +488,24 @@ function render() {
   }
 
   // ---- stage frame ---------------------------------------------------------
-  if (bars > 0.5) {
-    o.fillStyle = COL.deep;
-    o.fillRect(0, 0, W, bars);
-    o.fillRect(0, H - bars, W, bars);
+  // The overlay only changes when the letterbox moves, so it is not repainted
+  // every frame: that keeps the per-frame cost to one full-screen canvas.
+  if (bars !== S.lastBars || W !== S.lastW || H !== S.lastH) {
+    S.lastBars = bars; S.lastW = W; S.lastH = H;
+    const o = L1.ctx2d;
+    o.clearRect(0, 0, W, H);
+    if (bars > 0.5) {
+      o.fillStyle = COL.deep;
+      o.fillRect(0, 0, W, bars);
+      o.fillRect(0, H - bars, W, bars);
+    }
+    // vignette: keeps the flat shapes from feeling like a web page
+    const vg = o.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.max(W, H) * 0.75);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.34)');
+    o.fillStyle = vg;
+    o.fillRect(0, 0, W, H);
   }
-  // vignette: cheap, and it keeps the flat shapes from feeling like a web page
-  const vg = o.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.max(W, H) * 0.75);
-  vg.addColorStop(0, 'rgba(0,0,0,0)');
-  vg.addColorStop(1, 'rgba(0,0,0,0.34)');
-  o.fillStyle = vg;
-  o.fillRect(0, 0, W, H);
 }
 
 // ===================================================================== scene
