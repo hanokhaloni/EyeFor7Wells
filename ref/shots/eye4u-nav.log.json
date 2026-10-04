@@ -1,0 +1,23 @@
+{
+  "name": "eye4u-nav",
+  "url": "https://web.archive.org/web/20060223051434/http://www.eye4u.com/home/",
+  "console": [
+    "[log] %cINFO%c web/src/lib.rs:1320%c Ruffle WASM module has been initialized color: whitesmoke; background: #444 color: gray; font-style: italic color: inherit",
+    "[log] %cNew Ruffle instance created (Version: 0.1.0 nightly 2025-05-21 | WebAssembly extensions: ON | Used renderer: wgpu-webgl) background: #37528C; color: #FFAD33",
+    "[log] Loading SWF file /home/eye4u_1n.swf",
+    "[warning] [.WebGL-0x77a401378c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[warning] [.WebGL-0x77a401378c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[warning] [.WebGL-0x77a401378c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[warning] [.WebGL-0x77a401378c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+  ],
+  "errors": [],
+  "evals": [],
+  "shots": [
+    "ref\\shots\\e10-intro-motion.png",
+    "ref\\shots\\e11-after-skip.png",
+    "ref\\shots\\e12.png",
+    "ref\\shots\\e13-nav-motion.png",
+    "ref\\shots\\e14-hover.png"
+  ],
+  "video": "ref\\shots\\eye4u-nav.webm"
+}

@@ -1,0 +1,20 @@
+{
+  "name": "smoke",
+  "url": "http://localhost:4747/",
+  "console": [],
+  "errors": [],
+  "evals": [
+    {
+      "step": 2,
+      "code": "({scene:document.body.dataset.scene, hash:location.hash, hasSeven:!!window.SEVEN, stageKids:document.getElementById(\"stage\").children.length, txt:document.body.innerText.slice(0,80)})",
+      "value": {
+        "scene": "boot-intro",
+        "hash": "#/",
+        "hasSeven": true,
+        "stageKids": 1,
+        "txt": "UNBUILT SCENE: boot-intro\nSOUND OFF"
+      }
+    }
+  ],
+  "shots": []
+}

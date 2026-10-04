@@ -1,0 +1,10 @@
+{
+  "name": "baseline",
+  "url": "http://localhost:4747/",
+  "console": [],
+  "errors": [],
+  "evals": [],
+  "shots": [
+    "capture\\_smoke\\baseline.png"
+  ]
+}
