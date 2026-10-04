@@ -39,7 +39,7 @@ const FULL = [
   { at: 3800, name: 'title',  dur: 820 },   // deep/bone/sand    — 7 WELLS
   { at: 4620, name: 'word',   dur: 1650 },  // deep/bone/sand    — באר שבע = WELL / SEVEN
   { at: 6270, name: 'water',  dur: 480 },   // deep/bone/water   — something is down there
-  { at: 6750, name: 'down',   dur: 5200 },   // deep              — the drop
+  { at: 6750, name: 'down',   dur: 840 },   // deep              — the drop
 ];
 const STAMP_T0 = 140, STAMP_GAP = 78, STAMP_DUR = 130;
 const SHORT = [

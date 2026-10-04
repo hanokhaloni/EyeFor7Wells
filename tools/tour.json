@@ -1,0 +1,31 @@
+{
+  "name": "tour",
+  "url": "http://localhost:4747/",
+  "out": "capture/tour",
+  "viewport": [1440, 900],
+  "video": true,
+  "steps": [
+    { "strip": { "name": "01-intro", "frames": 12, "every": 420, "cols": 4 } },
+    { "wait": 1500 },
+    { "shot": "02-surface-arrive" },
+    { "move": [420, 560] }, { "wait": 700 }, { "shot": "03-sweep-left" },
+    { "move": [1050, 330] }, { "wait": 700 }, { "shot": "04-sweep-right" },
+    { "move": [720, 460] }, { "wait": 500 },
+    { "strip": { "name": "05-surface-motion", "frames": 8, "every": 240, "cols": 4 } },
+
+    { "goto": "http://localhost:4747/#/well/whatsapp" }, { "wait": 1200 },
+    { "strip": { "name": "06-descent", "frames": 8, "every": 300, "cols": 4 } },
+    { "wait": 2500 }, { "shot": "07-whatsapp" }, { "text": "07-whatsapp-copy" },
+
+    { "goto": "http://localhost:4747/#/well/discord" }, { "wait": 4000 }, { "shot": "08-discord" },
+    { "goto": "http://localhost:4747/#/well/meetup" }, { "wait": 4000 }, { "shot": "09-meetup" },
+    { "goto": "http://localhost:4747/#/well/youtube" }, { "wait": 4000 }, { "shot": "10-youtube" },
+    { "goto": "http://localhost:4747/#/well/instagram" }, { "wait": 4000 }, { "shot": "11-instagram" },
+    { "goto": "http://localhost:4747/#/well/facebook" }, { "wait": 4000 }, { "shot": "12-facebook" },
+
+    { "goto": "http://localhost:4747/#/seventh" }, { "wait": 3000 }, { "shot": "13-seventh" },
+    { "strip": { "name": "14-seventh-motion", "frames": 8, "every": 300, "cols": 4 } },
+
+    { "key": "Escape" }, { "wait": 2000 }, { "shot": "15-back-to-surface" }
+  ]
+}
