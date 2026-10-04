@@ -1,0 +1,33 @@
+{
+  "updated": "2026-10-04",
+  "status": "wave 1 — builders running",
+  "maxWidth": 1000,
+  "blurb": "An original site for 7 Wells Indies, the Be'er-Sheva indie game dev community, built with the creative attitude of the classic Eye4U Flash site as the bar. Be'er Sheva means \"well of seven\" — so the site is a night desert with seven wells you descend into. Six are the community's real channels. The seventh is dry.",
+  "waves": [
+    {
+      "n": "wave 0",
+      "title": "Reference study + engine",
+      "summary": "Before building anything: a Playwright capture harness, then the actual Eye4U site captured live through the Wayback Machine's Ruffle Flash emulator — so the creative direction comes from the real artifact rather than a description of it.",
+      "pieces": [
+        {
+          "id": "ref",
+          "title": "What Eye4U actually does",
+          "state": "done",
+          "rev": 1,
+          "note": "Captured live, not from memory. The intro is a performance edited on beats: enormous flat vector shapes slamming through a full-bleed frame, three colours at a time, a 9px 'skip' against a screen-filling starburst. The nav is a diagram, not a menu — a photographic eye looks at an arc of beads. Three doors only. Takeaways: stage-not-document, giant flat shapes, cut-on-beat, committed palettes, identity-as-character, scale contrast, few doors.",
+          "shots": [
+            { "src": "ref/shots/e10-intro-motion.png", "cap": "Eye4U intro, 8 frames — logo winks, then flat colour slams the frame" },
+            { "src": "ref/shots/e13-nav-motion.png", "cap": "Eye4U main nav — an eye looking at a bead-arc. Navigation as diagram." }
+          ]
+        },
+        {
+          "id": "engine",
+          "title": "Capture harness + engine substrate",
+          "state": "done",
+          "rev": 1,
+          "note": "tools/cap.mjs drives the real running site: screenshots, webm clips, and tiled contact sheets of N frames so motion can be judged as a storyboard. Engine is vanilla ES modules — scene router with hash deep-linking, WebAudio synth voices (no audio files), canvas layer helper, seeded PRNG, film grain, persisted visitor state. No build step, no framework, no external assets beyond Google Fonts."
+        }
+      ]
+    }
+  ]
+}
