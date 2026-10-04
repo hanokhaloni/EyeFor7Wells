@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+import { readFile } from 'node:fs/promises';
+const out = process.argv[2];
+const files = process.argv.slice(3);
+const b = await chromium.launch();
+const p = await b.newPage({ viewport:{width:1600,height:1200} });
+const imgs = (await Promise.all(files.map(async(f,i)=>`<figure><img src="data:image/png;base64,${(await readFile(f)).toString('base64')}"><figcaption>${f.split(/[\\/]/).pop()}</figcaption></figure>`))).join('');
+await p.setContent(`<style>*{margin:0;box-sizing:border-box}body{background:#111;padding:8px;display:grid;grid-template-columns:repeat(${Math.min(4,files.length)},1fr);gap:8px;font:700 16px monospace}figure{position:relative;border:1px solid #444;line-height:0}img{width:100%;display:block}figcaption{position:absolute;left:0;top:0;background:#000d;color:#0f0;padding:2px 6px;line-height:1.3}</style>${imgs}`);
+await p.waitForTimeout(400);
+await p.locator('body').screenshot({path:out});
+await b.close();

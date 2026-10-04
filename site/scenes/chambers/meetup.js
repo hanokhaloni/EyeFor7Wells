@@ -91,9 +91,9 @@ export default function make({ fx, audio }) {
         const y = py + 24 + i * (size + 12);
         c.font = DISPLAY(size);
         c.fillStyle = rgba('#000000', 0.55);
-        tracked(c, line, px, y + 1.5, { track: 2.4, align: 'center' });
+        c.fillText(line, px, y + 1.5);
         c.fillStyle = rgba(i === 0 ? '#F2EDE2' : '#E8873A', i === 0 ? 0.82 : 0.9);
-        tracked(c, line, px, y, { track: 2.4, align: 'center' });
+        c.fillText(line, px, y);
       });
       c.restore();
 
@@ -131,18 +131,18 @@ export default function make({ fx, audio }) {
       tracked(c, 'WATCH THE BOARD', bx + 16, by + 80, { track: 2.2 });
 
       // --- the ring of seats, worn into the floor
-      const ry = g.floorY - 4, rx = g.half * 0.56;
+      const ry = g.floorY - 34, rx = g.half * 0.5;
       c.strokeStyle = rgba('#F2EDE2', 0.08);
       c.lineWidth = 1;
       c.beginPath();
-      c.ellipse(g.cx, ry, rx, rx * 0.3, 0, 0, Math.PI * 2);
+      c.ellipse(g.cx, ry, rx, rx * 0.26, 0, 0, Math.PI * 2);
       c.stroke();
       for (let i = 0; i < 11; i++) {
         const a = (i / 11) * Math.PI * 2 + 0.26;
         const sx = g.cx + Math.cos(a) * rx;
-        const sy = ry + Math.sin(a) * rx * 0.3;
+        const sy = ry + Math.sin(a) * rx * 0.26;
         const near = (Math.sin(a) + 1) / 2;          // seats at the front are larger
-        const sw = 18 + near * 16, sh = 9 + near * 8;
+        const sw = 14 + near * 12, sh = 7 + near * 6;
         c.fillStyle = rgba(blend('#453526', '#000000', 0.3), 0.95);
         c.beginPath(); c.ellipse(sx, sy, sw, sh, 0, 0, Math.PI * 2); c.fill();
         c.fillStyle = rgba('#F7E2C2', 0.07 + near * 0.08);

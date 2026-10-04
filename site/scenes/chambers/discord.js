@@ -87,7 +87,7 @@ export default function make({ fx, audio }) {
       const drive = 0.3 + loud * 0.85;
 
       // --- the standing wave
-      const A = (g.floorY - g.mouthY) * 0.17 * drive;
+      const A = (g.floorY - g.mouthY) * 0.23 * drive;
       const wave = (x) => {
         const u = (x - x0) / span;
         let y = 0;
@@ -151,11 +151,13 @@ export default function make({ fx, audio }) {
         const top = fh - 150 - gh.act * 70;
         const col = on ? '#3BE8B0' : '#F2EDE2';
 
-        const cg = c.createLinearGradient(0, top, 0, fh);
-        cg.addColorStop(0, rgba(col, 0));
-        cg.addColorStop(1, rgba(col, a * 0.5));
-        c.fillStyle = cg;
-        c.fillRect(x - 17, top, 34, fh - top);
+        for (const band of [{ w: 30, m: 0.3 }, { w: 17, m: 0.55 }, { w: 6, m: 1 }]) {
+          const cg = c.createLinearGradient(0, top, 0, fh);
+          cg.addColorStop(0, rgba(col, 0));
+          cg.addColorStop(1, rgba(col, a * 0.5 * band.m));
+          c.fillStyle = cg;
+          c.fillRect(x - band.w / 2, top, band.w, fh - top);
+        }
 
         c.strokeStyle = rgba(col, 0.2 + gh.act * 0.6);
         c.lineWidth = on ? 1.6 : 1;
@@ -173,7 +175,7 @@ export default function make({ fx, audio }) {
 
         c.font = MONO(8, 500);
         c.fillStyle = rgba(col, on ? 0.85 : 0.32);
-        tracked(c, on ? 'SPEAKING' : 'IDLE', x, fh - 18, { track: 1.5, align: 'center' });
+        tracked(c, on ? 'SPEAKING' : 'IDLE', x, fh + 26, { track: 1.5, align: 'center' });
       }
 
       // --- the room answers: a tone when the speaker changes

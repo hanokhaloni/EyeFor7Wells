@@ -110,11 +110,11 @@ function drawCard(c, o) {
 
   // ---- seven rings, a quiet echo of the field ------------------------------
   if (o.rings > 0) {
-    const r = H * 0.017;
+    const r = H * 0.021;
     c.save();
-    c.globalAlpha = 0.55 * o.rings;
+    c.globalAlpha = 0.85 * o.rings;
     c.strokeStyle = bone;
-    c.lineWidth = Math.max(1.5, H * 0.0028);
+    c.lineWidth = Math.max(2, H * 0.0038);
     for (let i = 0; i < 7; i++) {
       const x = W * 0.5 + (i - 3) * H * 0.072;
       c.beginPath();
@@ -352,7 +352,7 @@ function render() {
         titleIn: seg(t, 0, 420),
         titleY: H * 0.5,
         hebIn: 0, glossIn: 0, labelIn: 0, water: 0,
-        rings: seg(t, 420, 740),
+        rings: seg(t, 360, 620),
       });
       break;
     }
@@ -546,6 +546,7 @@ export default {
       T: 0,
       done: false,
       barsOn: false,
+      lastBars: -1, lastW: -1, lastH: -1,
       beat: beats[0],
       bi: 0,
       offs: [],
@@ -601,7 +602,12 @@ export default {
     };
     S.bail = bail;
 
-    const onKey = (e) => { if (!e.repeat) bail(e); };
+    // Any key skips — but never swallow a browser shortcut or Tab focus.
+    const onKey = (e) => {
+      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === 'Tab' || e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta') return;
+      bail(e);
+    };
     const onDown = (e) => bail(e);
     window.addEventListener('keydown', onKey, true);
     ctx.root.addEventListener('pointerdown', onDown);
