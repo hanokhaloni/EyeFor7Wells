@@ -59,7 +59,7 @@ export const WELLS = [
     url:'https://www.youtube.com/channel/UCCHR_ulaDIIODgsqyg4o5DA', hue:'rust', depth:44 },
   { id:'instagram',n:5, name:'INSTAGRAM',he:'אינסטגרם',role:'what it looks like',
     url:'https://www.instagram.com/7wellsindies', hue:'sand', depth:9 },
-  { id:'facebook', n:6, name:'FACEBOOK', he:'פייסבוק', role:'the oldest well',
+  { id:'facebook', n:6, name:'FACEBOOK', he:'פייסבוק', role:'the deepest well',
     url:'https://www.facebook.com/7WellsIndies/', hue:'rust', depth:70 },
   { id:'seventh',  n:7, name:'',         he:'',        role:'dry',
     url:null, hue:'bone', depth:null },
