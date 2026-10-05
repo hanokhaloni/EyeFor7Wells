@@ -1,248 +1,272 @@
 // WELL 05 — INSTAGRAM — 9 m.
-// The shallowest shaft: almost all the night gets in here. Someone pinned the community
-// to the wall in plates — every image drawn, not photographed, because photographs are
-// not ours to put underground. A sweep of light crosses the wall and the plates answer it.
-// Palette: lit stone, sand, bone.
+// The shallowest shaft, and the brightest. Three plates bigger than the frame have been
+// leaned against the dark: the desert from a roof, heads around a table, a controller.
+// Every image is drawn, not photographed. A hard bar of light glints across them on a
+// beat; tap anywhere to throw it again. The caption strip of the front plate is the
+// room's title. Palette (3): plum, coral, cream.
 
-import { MONO, rgba, tracked, blend } from './_shared.js';
+import { MONO, DISPLAY, HE, rgba, tracked, TAU } from './_shared.js';
 
-const PLATE = `<svg width="106" height="124" viewBox="0 0 124 146" fill="none" aria-hidden="true">
-  <rect x="3" y="3" width="118" height="140" fill="#F2EDE2" opacity=".92"/>
-  <rect x="11" y="11" width="102" height="98" fill="#1A1210"/>
-  <path d="M11 84 h102" stroke="var(--key)" stroke-width="7" opacity=".85"/>
-  <circle cx="44" cy="46" r="15" fill="var(--key)" opacity=".9"/>
-  <path d="M68 70 l18 -26 l20 38 h-62 z" fill="#F2EDE2" opacity=".35"/>
-  <path d="M20 126 h44" stroke="#1A1210" stroke-width="3" opacity=".5"/>
+const PLUM = '#2A0F2E';
+const CORAL = '#FF5A4E';
+const CREAM = '#FFE9C9';
+
+const PLATE = `<svg width="30" height="36" viewBox="0 0 30 36" fill="none" aria-hidden="true">
+  <rect x="1" y="1" width="28" height="34" fill="${CREAM}"/>
+  <rect x="4" y="4" width="22" height="22" fill="${CORAL}"/>
+  <circle cx="18" cy="12" r="5" fill="${CREAM}"/>
+  <path d="M4 26 L12 17 L20 26 Z" fill="${PLUM}"/>
 </svg>`;
 
-// Each plate is generated once into its own canvas: abstract, procedural, 3 colours.
-function paintPlate(c, w, h, k, R) {
-  const bone = '#F2EDE2', sand = '#E8873A', rust = '#B8341F';
-  c.fillStyle = '#191110';
-  c.fillRect(0, 0, w, h);
-  const type = k % 7;
+const PERIOD = 3600, SWEEP = 640;
 
-  if (type === 0) {                                  // the desert, from a roof
-    const sky = c.createLinearGradient(0, 0, 0, h);
-    sky.addColorStop(0, '#2A1A18');
-    sky.addColorStop(1, rgba(sand, 0.55));
-    c.fillStyle = sky; c.fillRect(0, 0, w, h);
-    c.fillStyle = rgba(bone, 0.85);
-    c.beginPath(); c.arc(w * 0.68, h * 0.33, w * 0.11, 0, Math.PI * 2); c.fill();
-    c.fillStyle = '#1A1210';
+// --- the images: flat, three colours, big shapes ---------------------------------
+function paint(c, S, kind) {
+  if (kind === 0) {                              // the desert, from a roof
+    c.fillStyle = CORAL; c.fillRect(0, 0, S, S);
+    c.fillStyle = CREAM;
+    c.beginPath(); c.arc(S * 0.63, S * 0.4, S * 0.27, 0, TAU); c.fill();
+    c.fillStyle = PLUM;
     c.beginPath();
-    c.moveTo(0, h * 0.72);
-    for (let i = 0; i <= 8; i++) c.lineTo((i / 8) * w, h * (0.6 + R() * 0.22));
-    c.lineTo(w, h); c.lineTo(0, h); c.fill();
-  } else if (type === 1) {                           // heads around a table
-    c.fillStyle = rgba(sand, 0.16); c.fillRect(0, 0, w, h);
-    c.fillStyle = rgba(bone, 0.9);
-    c.beginPath(); c.ellipse(w / 2, h * 0.62, w * 0.34, h * 0.16, 0, 0, Math.PI * 2); c.fill();
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * Math.PI * 2 + 0.4;
-      c.fillStyle = i % 3 === 0 ? rgba(rust, 0.95) : '#1A1210';
+    c.moveTo(0, S * 0.66);
+    c.bezierCurveTo(S * 0.25, S * 0.52, S * 0.45, S * 0.72, S * 0.7, S * 0.6);
+    c.bezierCurveTo(S * 0.85, S * 0.53, S * 0.95, S * 0.58, S, S * 0.56);
+    c.lineTo(S, S); c.lineTo(0, S); c.closePath(); c.fill();
+    c.fillStyle = CORAL;
+    c.beginPath();
+    c.moveTo(0, S * 0.84);
+    c.bezierCurveTo(S * 0.3, S * 0.76, S * 0.6, S * 0.9, S, S * 0.8);
+    c.lineTo(S, S * 0.83);
+    c.bezierCurveTo(S * 0.6, S * 0.93, S * 0.3, S * 0.79, 0, S * 0.87);
+    c.closePath(); c.fill();
+  } else if (kind === 1) {                       // heads around a table
+    c.fillStyle = PLUM; c.fillRect(0, 0, S, S);
+    c.fillStyle = CREAM;
+    c.beginPath(); c.ellipse(S * 0.5, S * 0.56, S * 0.36, S * 0.18, 0, 0, TAU); c.fill();
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 7) * TAU + 0.35;
+      c.fillStyle = CORAL;
       c.beginPath();
-      c.arc(w / 2 + Math.cos(a) * w * 0.36, h * 0.62 + Math.sin(a) * h * 0.2, w * 0.08, 0, Math.PI * 2);
+      c.arc(S * 0.5 + Math.cos(a) * S * 0.42, S * 0.56 + Math.sin(a) * S * 0.25, S * 0.075, 0, TAU);
       c.fill();
     }
-  } else if (type === 2) {                           // a screen in a dark room
-    c.fillStyle = '#120C0B'; c.fillRect(0, 0, w, h);
-    const gw = w * 0.56, gh = gw * 0.62;
-    const gx = (w - gw) / 2, gy = h * 0.3;
-    const gl = c.createRadialGradient(gx + gw / 2, gy + gh / 2, 2, gx + gw / 2, gy + gh / 2, gw);
-    gl.addColorStop(0, rgba(bone, 0.5));
-    gl.addColorStop(1, rgba(bone, 0));
-    c.fillStyle = gl; c.fillRect(0, 0, w, h);
-    c.fillStyle = rgba(bone, 0.92); c.fillRect(gx, gy, gw, gh);
-    c.fillStyle = rgba(sand, 0.9); c.fillRect(gx + 6, gy + 6, gw - 12, gh * 0.22);
-    c.fillStyle = '#120C0B';
-    for (let i = 0; i < 5; i++) c.fillRect(gx + 6, gy + gh * 0.38 + i * 7, (gw - 12) * (0.3 + R() * 0.6), 2.5);
-  } else if (type === 3) {                           // halftone
-    c.fillStyle = '#1C1211'; c.fillRect(0, 0, w, h);
-    for (let y = 6; y < h; y += 9) {
-      for (let x = 6; x < w; x += 9) {
-        const r = (1 - y / h) * 4.4 * (0.4 + R() * 0.9);
-        if (r < 0.4) continue;
-        c.fillStyle = rgba(y / h > 0.6 ? sand : bone, 0.85);
-        c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
-      }
-    }
-  } else if (type === 4) {                           // a controller, abstracted
-    c.fillStyle = rgba(rust, 0.3); c.fillRect(0, 0, w, h);
-    c.fillStyle = rgba(bone, 0.93);
+    c.fillStyle = PLUM;
+    c.fillRect(S * 0.3, S * 0.52, S * 0.4, S * 0.025);
+  } else {                                       // a controller, abstracted
+    c.fillStyle = CORAL; c.fillRect(0, 0, S, S);
+    c.fillStyle = PLUM;
     c.beginPath();
-    c.ellipse(w * 0.34, h * 0.5, w * 0.2, h * 0.16, 0, 0, Math.PI * 2);
-    c.ellipse(w * 0.66, h * 0.5, w * 0.2, h * 0.16, 0, 0, Math.PI * 2);
+    c.ellipse(S * 0.32, S * 0.52, S * 0.2, S * 0.17, 0, 0, TAU);
+    c.ellipse(S * 0.68, S * 0.52, S * 0.2, S * 0.17, 0, 0, TAU);
     c.fill();
-    c.fillRect(w * 0.34, h * 0.34, w * 0.32, h * 0.32);
-    c.fillStyle = '#1A1210';
-    c.fillRect(w * 0.26, h * 0.46, w * 0.12, 4);
-    c.fillRect(w * 0.31, h * 0.41, 4, w * 0.12);
-    c.beginPath(); c.arc(w * 0.68, h * 0.47, 4.5, 0, Math.PI * 2); c.fill();
-    c.beginPath(); c.arc(w * 0.76, h * 0.53, 4.5, 0, Math.PI * 2); c.fill();
-  } else if (type === 5) {                           // a window of light
-    c.fillStyle = '#140D0C'; c.fillRect(0, 0, w, h);
-    c.fillStyle = rgba(bone, 0.9);
-    c.fillRect(w * 0.26, h * 0.16, w * 0.48, h * 0.44);
-    c.fillStyle = '#140D0C';
-    c.fillRect(w * 0.49, h * 0.16, 3, h * 0.44);
-    c.fillRect(w * 0.26, h * 0.36, w * 0.48, 3);
-    c.fillStyle = rgba(sand, 0.4);
-    c.beginPath();
-    c.moveTo(w * 0.26, h * 0.6); c.lineTo(w * 0.74, h * 0.6);
-    c.lineTo(w * 0.92, h); c.lineTo(w * 0.08, h); c.fill();
-  } else {                                           // a build, mid-jam
-    c.fillStyle = '#17100F'; c.fillRect(0, 0, w, h);
-    for (let i = 0; i < 9; i++) {
-      c.fillStyle = rgba(i === 3 ? sand : bone, 0.2 + R() * 0.7);
-      c.fillRect(8, 12 + i * (h - 24) / 9, (w - 16) * (0.2 + R() * 0.75), 3.5);
-    }
-    c.strokeStyle = rgba(rust, 0.9); c.lineWidth = 2;
-    c.strokeRect(6, 8, w - 12, h - 16);
+    c.fillRect(S * 0.32, S * 0.36, S * 0.36, S * 0.3);
+    c.fillStyle = CREAM;
+    c.fillRect(S * 0.21, S * 0.495, S * 0.14, S * 0.05);
+    c.fillRect(S * 0.255, S * 0.45, S * 0.05, S * 0.14);
+    c.beginPath(); c.arc(S * 0.7, S * 0.47, S * 0.035, 0, TAU); c.fill();
+    c.beginPath(); c.arc(S * 0.78, S * 0.55, S * 0.035, 0, TAU); c.fill();
   }
-
-  // every plate is a little over-exposed at the top
-  const sh = c.createLinearGradient(0, 0, 0, h);
-  sh.addColorStop(0, rgba('#FFF0DC', 0.12));
-  sh.addColorStop(0.5, rgba('#FFF0DC', 0));
-  sh.addColorStop(1, rgba('#000000', 0.3));
-  c.fillStyle = sh;
-  c.fillRect(0, 0, w, h);
 }
 
-export default function make({ fx }) {
-  const prng = fx.rnd(9091);
+export default function make({ fx, audio }) {
   const reduced = !!fx.reducedMotion;
   let L = null, geo = null;
-  const plates = [];
-  let built = 0;
+  let plates = null;
+  let t0 = -1, tNow = 0, glintAt = 0;
+  const DROP = 260;                              // ms from the room's first frame
+  let px = 0, py = 0;                            // pointer, for a little parallax
 
-  const build = (g) => {
-    plates.length = 0;
-    const cols = 6, rows = 2;
-    const padX = 78, padY = 42;
-    const x0 = g.left + padX, x1 = g.right - padX;
-    const y0 = g.mouthY + padY, y1 = g.floorY - 186;
-    const cw = (x1 - x0) / cols, ch = (y1 - y0) / rows;
-    const pw = Math.min(118, cw - 16), ph = pw * 1.2;
-    let n = 0;
-    for (let r = 0; r < rows; r++) {
-      for (let col = 0; col < cols; col++) {
-        if (prng() < 0.12) continue;                 // a few nails are empty
-        const cvs = document.createElement('canvas');
-        const S = 2;
-        cvs.width = pw * S; cvs.height = ph * S;
-        const cc = cvs.getContext('2d');
-        cc.scale(S, S);
-        // the plate itself: bone card, image window, caption strip
-        cc.fillStyle = '#F2EDE2';
-        cc.fillRect(0, 0, pw, ph);
-        cc.save();
-        cc.translate(7, 7);
-        const iw = pw - 14, ih = ph - 34;
-        cc.beginPath(); cc.rect(0, 0, iw, ih); cc.clip();
-        paintPlate(cc, iw, ih, n + ((prng() * 7) | 0), fx.rnd(n * 613 + 29));
-        cc.restore();
-        cc.font = MONO(7, 500);
-        cc.fillStyle = 'rgba(26,18,16,.72)';
-        tracked(cc, 'PL-' + String(n + 1).padStart(2, '0'), 8, ph - 11, { track: 1.4 });
-        cc.fillStyle = 'rgba(184,52,31,.9)';
-        cc.fillRect(pw - 20, ph - 16, 12, 5);
 
-        plates.push({
-          cvs, pw, ph,
-          x: x0 + col * cw + (cw - pw) / 2 + (prng() - 0.5) * 14,
-          y: y0 + r * ch + (ch - ph) / 2 + (prng() - 0.5) * 14,
-          rot: (prng() - 0.5) * 0.14,
-          ph2: prng() * 7,
-        });
-        n++;
-      }
+  // the link's box on screen (measured; the frame places it): short screens fit around it
+  let takeR = null, takeAt = -1e9;
+  const takeBox = (t) => {
+    if (t - takeAt > 400) {
+      takeAt = t;
+      const a = document.querySelector('.ch[data-well="instagram"] .ch-take');
+      const r = a && a.getBoundingClientRect();
+      takeR = r && r.height ? { top: r.top, right: r.right, left: r.left } : null;
     }
-    built = plates.length;
+    return takeR;
   };
 
+  let builtLt = null;
+  const build = (w, h, lt) => {
+    const narrow = w < 640;
+    // the front plate stands below the hole you fell through (top 21% kept open) and,
+    // on a phone, inside the frame so the caption is whole
+    let bottom = h * (narrow ? 0.68 : 0.9);
+    if (narrow && h > w && lt != null) bottom = Math.min(bottom, lt - 16);
+    builtLt = lt;
+    const W = Math.max(1, Math.min((bottom - h * 0.21) / 1.16, w * (narrow ? 0.9 : 0.5)));
+    const H = W * 1.16;
+    const defs = [
+      // back plates first; the front plate last, and first to land
+      { kind: 1, card: CORAL, cx: w * (narrow ? -0.1 : 0.17), cy: h * (narrow ? 0.3 : 0.26), s: 0.82, rot: 0.16, z: 0.5, delay: 70 },
+      { kind: 2, card: CREAM, cx: w * (narrow ? 1.1 : 0.85), cy: h * (narrow ? 0.27 : 0.22), s: 0.86, rot: -0.19, z: 0.7, delay: 140 },
+      { kind: 0, card: CREAM, cx: w * 0.5, cy: bottom - H / 2, s: 1, rot: -0.07, z: 1, delay: 0, front: true },
+    ];
+    plates = defs.map((d) => {
+      const pw = W * d.s, ph = H * d.s;
+      const b = pw * 0.05;
+      const S = pw - b * 2;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const cvs = document.createElement('canvas');
+      cvs.width = Math.max(1, Math.round(S * dpr)); cvs.height = Math.max(1, Math.round(S * dpr));
+      const cc = cvs.getContext('2d');
+      cc.scale(dpr, dpr);
+      if (S >= 1) paint(cc, S, d.kind);
+      return Object.assign({}, d, { pw, ph, b, S, cvs });
+    });
+  };
+
+  const glint = () => { glintAt = tNow; audio.tone(1320, { dur: 0.12, type: 'triangle', gain: 0.06, slideTo: 1980 }); };
+  const onDown = () => { if (t0 >= 0) glint(); };
+
+  const onMove = (e) => { px = e.clientX; py = e.clientY; };
+
   return {
+    frame: { vault: false, gauge: false, index: false, notes: false, title: false, air: false },
     pal: {
-      ink: '#1A1211', stone: '#4C4036', stoneDark: '#120C0A',
-      key: '#E8873A', cone: '#FFF0DC', dust: '#FFE6C8',
+      ink: PLUM, stone: '#3A1A40', stoneDark: '#14061A',
+      key: CORAL, keyText: CORAL, cone: '#5A2440', dust: CREAM, bone: CREAM,
     },
     takeHz: 880,
     take: {
+      verb: 'lift a plate',
+      cta: 'FOLLOW ON INSTAGRAM',
       label: 'lift a plate',
       host: 'instagram.com',
       art: PLATE,
-      pos: { left: '50%', top: '77%' },
+      // 'side': the frame stands the link against the left wall, under the leaning
+      // back plate and clear of the front one
+      pos: { left: '50%', top: '78%' },
+      variant: 'side',
     },
-    ui: `
-      <div class="nt" style="left:26px;bottom:120px">
-        <b>insolation · 100%</b>
-        nearest the surface<br>
-        <em>plates: drawn, not taken</em>
-      </div>`,
 
-    init(env) { geo = env.geo; L = env.layer(3); },
+    init(env) {
+      geo = env.geo;
+      L = env.layer(3);
+      L.canvas.addEventListener('pointerdown', onDown);
+      window.addEventListener('pointermove', onMove);
+    },
 
-    resize() { plates.length = 0; },
+    resize() { plates = null; },
 
     update(dt, t) {
       if (!L) return;
+      tNow = t;
+      if (t0 < 0) { t0 = t; glintAt = t + DROP + 140; }
       const g = geo();
-      if (!plates.length && g.mouthY < g.floorY - 260) build(g);
+      const { w, h } = g;
+      if (!(w >= 1 && h >= 1)) return;
       const c = L.ctx2d;
-      c.clearRect(0, 0, g.w, g.h);
+      const tb = takeBox(t);
+      const lt = tb ? Math.round(tb.top / 6) * 6 : null;
+      if (!plates || lt !== builtLt) build(w, h, lt);
 
-      // the sweep: a band of light crossing the wall, left to right
-      const sweep = reduced ? g.cx : g.left + ((t / 26) % ((g.right - g.left) + 700)) - 350;
+      c.fillStyle = PLUM;
+      c.fillRect(0, 0, w, h);
 
-      for (const p of plates) {
-        const sway = reduced ? 0 : Math.sin(t / 2600 + p.ph2) * 0.012;
-        const cx = p.x + p.pw / 2, cy = p.y + p.ph / 2;
-        c.save();
-        c.translate(cx, cy);
-        c.rotate(p.rot + sway);
-        c.shadowColor = 'rgba(0,0,0,.6)';
-        c.shadowBlur = 14;
-        c.shadowOffsetY = 7;
-        c.drawImage(p.cvs, -p.pw / 2, -p.ph / 2, p.pw, p.ph);
-        c.shadowBlur = 0; c.shadowOffsetY = 0;
+      const base = c.getTransform();
+      const pxN = reduced || !px ? 0 : (px / w - 0.5);
+      const pyN = reduced || !py ? 0 : (py / h - 0.5);
 
-        // the sweep hitting this plate
-        const d = Math.abs(cx - sweep);
-        if (d < 260) {
-          const k = Math.pow(1 - d / 260, 2);
-          c.globalCompositeOperation = 'lighter';
-          const sg = c.createLinearGradient(-p.pw / 2, -p.ph / 2, p.pw / 2, p.ph / 2);
-          sg.addColorStop(0, rgba('#FFF0DC', 0));
-          sg.addColorStop(0.5, rgba('#FFF0DC', 0.3 * k));
-          sg.addColorStop(1, rgba('#FFF0DC', 0));
-          c.fillStyle = sg;
-          c.fillRect(-p.pw / 2, -p.ph / 2, p.pw, p.ph);
-          c.globalCompositeOperation = 'source-over';
+      // where each plate sits this frame (they drop in, hard, one after another)
+      const at = plates.map((p) => {
+        let dy = 0;
+        if (!reduced) {
+          const q = Math.max(0, Math.min(1, (t - t0 - p.delay) / DROP));
+          dy = -h * 1.4 * (1 - q * q);
         }
-        // the nail
-        c.fillStyle = rgba('#1A1210', 0.8);
-        c.beginPath(); c.arc(0, -p.ph / 2 + 5, 2.4, 0, Math.PI * 2); c.fill();
-        c.fillStyle = rgba('#FFF0DC', 0.5);
-        c.beginPath(); c.arc(-0.7, -p.ph / 2 + 4.3, 1, 0, Math.PI * 2); c.fill();
+        return {
+          x: p.cx - pxN * 22 * p.z,
+          y: p.cy + dy - pyN * 14 * p.z,
+        };
+      });
+
+      plates.forEach((p, i) => {
+        const { x, y } = at[i];
+        c.save();
+        c.translate(x, y);
+        c.rotate(p.rot);
+        // flat offset shadow, no blur
+        c.fillStyle = rgba('#000000', 0.35);
+        c.fillRect(-p.pw / 2 + 16, -p.ph / 2 + 20, p.pw, p.ph);
+        c.fillStyle = p.card;
+        c.fillRect(-p.pw / 2, -p.ph / 2, p.pw, p.ph);
+        if (p.S >= 1 && p.cvs.width >= 1 && p.cvs.height >= 1) c.drawImage(p.cvs, -p.pw / 2 + p.b, -p.ph / 2 + p.b, p.S, p.S);
+
+        if (p.front) {
+          // the caption strip is the title
+          const capTop = -p.ph / 2 + p.b + p.S;
+          const capH = p.ph / 2 - capTop;
+          const fs = Math.min(capH * 0.62, p.pw * 0.11);
+          const lx = -p.pw / 2 + p.b;
+          c.textBaseline = 'middle';
+          c.textAlign = 'left';
+          c.font = DISPLAY(fs);
+          c.fillStyle = PLUM;
+          c.fillText('INSTAGRAM', lx, capTop + capH * 0.52);
+          const nw = c.measureText('INSTAGRAM').width;
+          c.font = HE(fs * 0.46, 800);
+          c.fillStyle = CORAL;
+          c.fillText('אינסטגרם', lx + nw + fs * 0.25, capTop + capH * 0.42);
+          c.font = MONO(Math.max(8, fs * 0.2), 600);
+          c.fillStyle = rgba(PLUM, 0.75);
+          c.textAlign = 'right';
+          // on a phone the plate overflows the frame: keep the caption on screen
+          const rx = Math.min(p.pw / 2 - p.b, w / 2 - 24);
+          const roomy = w >= 640;
+          tracked(c, '09 M', rx, capTop + capH * (roomy ? 0.36 : 0.5), { track: 2, align: 'right' });
+          if (roomy) tracked(c, 'WHAT IT LOOKS LIKE', rx, capTop + capH * 0.66, { track: 2, align: 'right' });
+          c.textBaseline = 'alphabetic';
+        }
+        c.restore();
+      });
+
+      // --- the glint: a hard flat bar of light across every image at once
+      let s;
+      if (reduced) s = 0.42;
+      else {
+        const since = t - glintAt;
+        if (since >= 0 && since < SWEEP) s = since / SWEEP;
+        else if (since >= SWEEP) {
+          // schedule the next beat
+          if (since > PERIOD) glintAt = t;
+          s = -1;
+        } else s = -1;
+      }
+      if (s >= 0) {
+        c.save();
+        c.beginPath();
+        plates.forEach((p, i) => {
+          c.setTransform(base);
+          c.translate(at[i].x, at[i].y);
+          c.rotate(p.rot);
+          c.rect(-p.pw / 2 + p.b, -p.ph / 2 + p.b, p.S, p.S);   // the images, not the cards
+        });
+        c.setTransform(base);
+        c.clip();
+        const span = w + h;
+        const bx = -h * 0.5 + s * (span + h * 0.4);
+        const bw = Math.max(70, w * 0.11);
+        const skew = h * 0.55;
+        c.fillStyle = rgba(CREAM, 0.72);
+        c.beginPath();
+        c.moveTo(bx, 0); c.lineTo(bx + bw, 0);
+        c.lineTo(bx + bw - skew, h); c.lineTo(bx - skew, h); c.closePath(); c.fill();
+        const tx = bx + bw + bw * 0.45, tw = bw * 0.22;
+        c.beginPath();
+        c.moveTo(tx, 0); c.lineTo(tx + tw, 0);
+        c.lineTo(tx + tw - skew, h); c.lineTo(tx - skew, h); c.closePath(); c.fill();
         c.restore();
       }
-
-      // readout, chalked under the wall
-      c.textAlign = 'left';
-      c.font = MONO(9, 500);
-      c.fillStyle = rgba('#E8873A', 0.75);
-      tracked(c, 'PLATES ON THE WALL · ' + String(built).padStart(2, '0'),
-        g.left + 78, g.floorY - 158, { track: 2.4 });
-      c.strokeStyle = rgba('#F2EDE2', 0.16);
-      c.lineWidth = 1;
-      c.beginPath();
-      c.moveTo(g.left + 78, g.floorY - 150);
-      c.lineTo(g.right - 78, g.floorY - 150);
-      c.stroke();
-      c.fillStyle = rgba(blend('#E8873A', '#F2EDE2', 0.4), 0.3);
     },
 
-    dispose() { plates.length = 0; L = null; geo = null; },
+    dispose() {
+      if (L) L.canvas.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('pointermove', onMove);
+      plates = null; L = null; geo = null;
+    },
   };
 }

@@ -1,167 +1,354 @@
 // WELL 03 — MEETUP — 21 m.
-// A gathering chamber. Someone has been counting: the back wall carries a tally of every
-// meet held, cut five at a time. The group's name is cut into the stone above it, and a
-// ring of seats is worn into the floor around the light. A new mark appears while you
-// stand here. Palette: warm stone, sand, bone.
+// A gathering stage. One enormous marigold slab carries the group's name, cut in
+// letters taller than a person, and it slams down as you arrive. Below it a ring of seats
+// is worn into the floor, so wide it runs off both edges of the frame. People have
+// scratched marks into the slab's lower edge: anonymous, uncounted. Tap the slab to cut
+// your own. Palette (3): night navy, marigold, bone.
 
-import { MONO, DISPLAY, rgba, tracked, rough, roughRect, blend } from './_shared.js';
+import { MONO, DISPLAY, HE, rgba, tracked, rough, TAU } from './_shared.js';
 
-const CHISEL = `<svg width="104" height="132" viewBox="0 0 104 132" fill="none" aria-hidden="true">
-  <path d="M52 8 L52 74" stroke="var(--key)" stroke-width="7" opacity=".9" stroke-linecap="square"/>
-  <path d="M52 74 L44 96 L52 108 L60 96 Z" fill="var(--key)" opacity=".95"/>
-  <path d="M52 8 L52 74" stroke="#F2EDE2" stroke-width="1.6" opacity=".35"/>
-  <path d="M22 122 l10 -18 M40 126 l10 -18 M58 126 l10 -18 M76 122 l10 -18"
-        stroke="#F2EDE2" stroke-width="1.6" opacity=".4"/>
-  <path d="M18 118 l72 -8" stroke="var(--key)" stroke-width="1.2" opacity=".3"/>
+// the inner edge of the frame's wall bands (the band plus its lit lip): text stays inside it
+const wallIn = (g) => (g && g.wall ? g.wall + Math.max(4, Math.round(g.wall * 0.34)) : 0);
+
+const NAVY = '#101B3B';
+const GOLD = '#F2B705';
+const BONE = '#F2EDE2';
+
+const CHISEL = `<svg width="30" height="40" viewBox="0 0 30 40" fill="none" aria-hidden="true">
+  <path d="M15 2 V24" stroke="${GOLD}" stroke-width="5" stroke-linecap="square"/>
+  <path d="M15 24 L9 32 L15 38 L21 32 Z" fill="${GOLD}"/>
 </svg>`;
 
-const NAME = ['THE SOUTHERN', 'GAME PROGRAMMING', 'MEETUP GROUP'];
+// Each line is cut in two where the rope from the hole above passes down the slab.
+const LINES_WIDE = [['THE SOUTHERN', 'GAME PROGRAMMING'], ['MEETUP', 'GROUP']];
+const LINES_TALL = [['THE', 'SOUTHERN'], ['GAME', 'PROGRAMMING'], ['MEETUP', 'GROUP']];
+const LINES_SHORT = [['MEETUP', 'GROUP']];
+
+// Where the frame's rope (hole -> link) crosses the band [ya, yb]: [minX, maxX], or null.
+// Mirrors the frame's curve (a straight drop, or a bend to an off-centre link), padded for
+// its sway and thickness, so the name can be cut around it.
+function ropeBand(g, ya, yb) {
+  if (!g || !g.hole) return null;
+  const x0 = g.hole.x, y0 = g.hole.y + g.hole.r * 0.4;
+  const x1 = g.rope ? g.rope.x : x0, y1 = g.rope ? g.rope.y : g.h * 0.8;
+  if (yb < y0 || ya > y1) return null;
+  if (Math.abs(x1 - x0) < 2) return [x0 - 7, x0 + 7];
+  const d = y1 - y0;
+  const P = [[x0, y0], [x0, y0 + d * 0.55], [x1, y1 - d * 0.3], [x1, y1]];
+  let lo = Infinity, hi = -Infinity;
+  for (let i = 0; i <= 60; i++) {
+    const t = i / 60, u = 1 - t;
+    const k = [u * u * u, 3 * u * u * t, 3 * u * t * t, t * t * t];
+    const y = k[0] * P[0][1] + k[1] * P[1][1] + k[2] * P[2][1] + k[3] * P[3][1];
+    if (y < ya || y > yb) continue;
+    const x = k[0] * P[0][0] + k[1] * P[1][0] + k[2] * P[2][0] + k[3] * P[3][0];
+    lo = Math.min(lo, x); hi = Math.max(hi, x);
+  }
+  return lo <= hi ? [lo - 7, hi + 7] : null;
+}
 
 export default function make({ fx, audio }) {
-  const prng = fx.rnd(5209);
   const reduced = !!fx.reducedMotion;
   let L = null, geo = null;
-  let held = 47, cutAcc = 0, live = false, fresh = -1;
+  let t0 = -1, cutAcc = 0, slammed = false;
+  const DROP = 300;                  // ms from the room's first frame: down well before the link
+  let lay = null;                    // cached slab layout (per viewport)
+  const marks = [];                  // scratches, slab-local coords, no number attached
+  let markSeedDone = false;
+
   const jitter = [];
-  for (let i = 0; i < 400; i++) jitter.push(prng());
+  { const r = fx.rnd(5209); for (let i = 0; i < 600; i++) jitter.push(r()); }
   let jp = 0;
   const jr = () => jitter[(jp = (jp + 1) % jitter.length)];
 
-  // one tally mark: four uprights and a crossing stroke, cut by hand
-  const group = (c, x, y, n, a, col) => {
-    c.strokeStyle = rgba(col, a);
-    c.lineWidth = 1.6;
-    for (let i = 0; i < Math.min(4, n); i++) {
-      const gx = x + i * 8;
-      rough(c, gx, y, gx + (jr() - 0.5) * 3, y + 24, { jitter: 1.1, steps: 3, prng: jr });
+
+  // the link's box on screen (measured; the frame places it): short screens fit around it
+  let takeR = null, takeAt = -1e9;
+  const takeBox = (t) => {
+    if (t - takeAt > 400) {
+      takeAt = t;
+      const a = document.querySelector('.ch[data-well="meetup"] .ch-take');
+      const r = a && a.getBoundingClientRect();
+      const tx = a && a.querySelector('.ch-take__txt');
+      const q = tx && tx.getBoundingClientRect();
+      const art = a && a.querySelector('.ch-take__art');
+      const ab = art && art.getBoundingClientRect();
+      takeR = r && r.height ? {
+        top: r.top, right: r.right, left: r.left,
+        txt: q && q.height ? q.top : r.top,
+        art: ab && ab.height ? { l: ab.left, r: ab.right, t: ab.top } : null,
+      } : null;
     }
-    if (n === 5) rough(c, x - 4, y + 22, x + 30, y + 2, { jitter: 1.2, steps: 4, prng: jr });
+    return takeR;
+  };
+
+  // --- layout: fit the name to the slab, line by line -------------------------------
+  // rx: the rope's x on screen (null: no rope), gap: half the clear lane around it
+  const layout = (c, w, h, wall, rx, gap, hole, linkTop) => {
+    const narrow = w < 900;
+    // a short landscape phone keeps only the name on the slab; the descriptor moves to the
+    // survey line above it
+    const lines = h < 520 && w > h ? LINES_SHORT : narrow ? LINES_TALL : LINES_WIDE;
+    const gut = (wall || 0) + (w < 640 ? 12 : 40);
+    let maxH = h * (narrow ? 0.25 : 0.28);
+    const short = h < 520;
+    const pad = short ? 8 : Math.max(18, h * 0.035);
+    const strip = short ? 0 : narrow ? h * 0.07 : h * 0.06;    // the scratched band under the name
+    // the slab hangs below the hole you fell through: the top 20% stays open
+    // (on a short screen, just under the hole) and its foot stays above the link
+    const y0 = short && hole ? hole.y + hole.r + 10 : Math.max(54, h * 0.2);
+    if (linkTop != null) maxH = Math.max(12, Math.min(maxH, linkTop - 12 - y0 - pad * 2 - strip));
+    const sp = 0.32;                 // the word space, in em, when there is no rope
+    c.font = DISPLAY(100);
+    let sizes = lines.map(([a, b]) => {
+      const wa = c.measureText(a).width / 100, wb = c.measureText(b).width / 100;
+      if (rx == null) return Math.min(w - gut * 2, 1500) / (wa + wb + sp);
+      return Math.min((rx - gap - gut) / wa, (w - gut - rx - gap) / wb);
+    });
+    const lead = 0.98;              // Anton caps are tall: keep the lines apart
+    const total = sizes.reduce((a, s) => a + s * lead, 0);
+    if (total > maxH) sizes = sizes.map((s) => s * maxH / total);
+    const textH = sizes.reduce((a, s) => a + s * lead, 0);
+    const slabH = pad * 2 + textH + strip;
+    return {
+      lines, sizes, lead, pad, strip, textH, rx, gap,
+      x: -80, y: y0, sw: w + 160, sh: slabH,
+      rot: -0.03, cx: w / 2, cy: y0 + slabH / 2,
+    };
+  };
+
+  const seedMarks = () => {
+    if (markSeedDone || !lay) return;
+    markSeedDone = true;
+    const r = fx.rnd(3301);
+    // loose clusters, not tallies: nobody kept score
+    for (let k = 0; k < 9; k++) {
+      const cx = 0.05 + r() * 0.9;
+      const n = 2 + ((r() * 6) | 0);
+      for (let i = 0; i < n; i++) {
+        marks.push({
+          u: cx + (r() - 0.5) * 0.05,
+          v: 0.18 + r() * 0.6,
+          a: -1.2 + (r() - 0.5) * 0.9,
+          l: 0.45 + r() * 0.5,
+          born: -1e9,
+        });
+      }
+    }
+  };
+
+  const cut = (u, v, now) => {
+    if (marks.length > 220) marks.shift();
+    marks.push({ u, v, a: -1.2 + (Math.random() - 0.5) * 0.9, l: 0.5 + Math.random() * 0.5, born: now });
+    audio.noise({ dur: 0.16, gain: 0.08, band: [1400, 5200] });
+    audio.noise({ dur: 0.09, gain: 0.05, band: [220, 900], delay: 0.05 });
+  };
+
+  // tap the slab to cut a mark where you touched it
+  let lastT = 0;
+  const onDown = (e) => {
+    if (!lay || !geo) return;
+    const dx = e.clientX - lay.cx, dy = e.clientY - (lay.cy + slabOffset());
+    const cs = Math.cos(-lay.rot), sn = Math.sin(-lay.rot);
+    const lx = dx * cs - dy * sn + lay.sw / 2;
+    const ly = dx * sn + dy * cs + lay.sh / 2;
+    if (lx < 0 || lx > lay.sw || ly < 0 || ly > lay.sh) return;
+    const stripTop = lay.sh - lay.strip - lay.pad * 0.6;
+    const v = Math.max(0.05, Math.min(0.95, (ly - stripTop) / lay.strip));
+    cut(lx / lay.sw, v, lastT);
+  };
+
+  let tNow = 0;
+  const slabOffset = () => {
+    if (reduced) return 0;
+    if (!lay || t0 < 0) return -2000;
+    const p = Math.min(1, Math.max(0, (tNow - t0) / DROP));
+    const e = p * p * p;                           // it falls, it does not ease in
+    return -(lay.y + lay.sh + 60) * (1 - e);
   };
 
   return {
+    frame: { vault: false, gauge: false, index: false, notes: false, title: false, air: false },
     pal: {
-      ink: '#140E08', stone: '#453526', stoneDark: '#0C0704',
-      key: '#E8873A', cone: '#F7E2C2', dust: '#E8CFA8',
+      ink: NAVY, stone: '#1A2650', stoneDark: '#080E22',
+      key: GOLD, keyText: GOLD, cone: '#2A3A6E', dust: BONE, bone: BONE,
     },
     takeHz: 420,
     take: {
+      verb: 'cut your mark',
+      cta: 'JOIN ON MEETUP',
       label: 'cut your mark',
       host: 'meetup.com',
       art: CHISEL,
-      pos: { left: '50%', top: '74%' },
+      pos: {
+        // a short landscape phone sends the link to the bottom (the frame clamps it above
+        // the exits), leaving the room above it for the hero
+        get top() { return typeof innerHeight === 'number' && innerHeight < 500 && innerWidth > innerHeight ? '92%' : '70%'; },
+        left: '50%',
+      },
+      variant: 'plate',
     },
 
-    init(env) { geo = env.geo; L = env.layer(3); },
+    init(env) {
+      geo = env.geo;
+      L = env.layer(3);
+      L.canvas.addEventListener('pointerdown', onDown);
+      // the slab is fitted to Anton's widths: refit once the face is in
+      if (document.fonts && document.fonts.load) document.fonts.load('100px Anton').then(() => { lay = null; }).catch(() => {});
+    },
 
-    onLanded() { live = true; },
+
+
+    resize() { lay = null; },
 
     update(dt, t) {
       if (!L) return;
+      tNow = t; lastT = t;
+      if (t0 < 0) t0 = t;
       const g = geo();
+      const { w, h } = g;
+      if (!(w >= 1 && h >= 1)) return;
       const c = L.ctx2d;
-      c.clearRect(0, 0, g.w, g.h);
       jp = 0;
+      // the rope runs down through the slab: find its lane (rotation slack included)
+      const band = ropeBand(g, h * 0.2, h * 0.6);
+      const rxN = band ? Math.round((band[0] + band[1]) / 2) : null;
+      const gapN = band ? Math.round((band[1] - band[0]) / 2 + 10 + 0.03 * h * 0.2) : 0;
+      const tb = takeBox(t);
+      // a short screen: the slab may run down past the link's art (the rope's end) to the
+      // top of its plate, which leaves the name room to be read
+      const shortL = h < 520 && w > h;
+      const lt = tb ? Math.round((shortL ? tb.txt : tb.top) / 6) * 6 : null;
+      if (lay && (lay.rx !== rxN || lay.gap !== gapN || lay.w !== w || lay.lt !== lt)) lay = null;
+      if (!lay) { lay = layout(c, w, h, wallIn(g), rxN, gapN, g.hole, lt); lay.w = w; lay.lt = lt; }
+      seedMarks();
 
-      // a mark is cut while you are standing here
-      if (live && !reduced) {
+      // --- the ground: one flat colour, edge to edge
+      c.fillStyle = NAVY;
+      c.fillRect(0, 0, w, h);
+
+      // --- the ring of seats, too wide for the frame
+      // the ring sits around the link (take.pos top 70%) and stops above the exit row
+      const rcY = h * 0.7;
+      const rx = w * (w < 640 ? 0.44 : 0.36);
+      const ry = Math.min(rx * (w < 640 ? 0.5 : 0.3), h * 0.12);
+      c.lineWidth = Math.max(2, w * 0.002);
+      c.strokeStyle = rgba(BONE, 0.38);
+      c.beginPath(); c.ellipse(g.cx, rcY, rx, ry, 0, 0, TAU); c.stroke();
+      c.strokeStyle = rgba(BONE, 0.14);
+      c.beginPath(); c.ellipse(g.cx, rcY, rx * 0.72, ry * 0.72, 0, 0, TAU); c.stroke();
+      const seats = 14;
+      const order = [];
+      for (let i = 0; i < seats; i++) {
+        const a = (i / seats) * TAU + 0.11;
+        order.push({ a, near: (Math.sin(a) + 1) / 2 });
+      }
+      order.sort((p, q) => p.near - q.near);      // back seats first
+      for (const s of order) {
+        const sx = g.cx + Math.cos(s.a) * rx;
+        const sy = rcY + Math.sin(s.a) * ry;
+        const sw = rx * (0.03 + s.near * 0.07);
+        const sh = sw * (w < 640 ? 0.5 : 0.4);
+        c.fillStyle = GOLD;
+        c.beginPath(); c.ellipse(sx, sy, sw, sh, 0, 0, TAU); c.fill();
+        // the worn top of each seat: a flat bone crescent
+        c.fillStyle = rgba(BONE, 0.85);
+        c.beginPath(); c.ellipse(sx, sy - sh * 0.28, sw * 0.7, sh * 0.42, 0, 0, TAU); c.fill();
+        c.fillStyle = GOLD;
+        c.beginPath(); c.ellipse(sx, sy - sh * 0.14, sw * 0.62, sh * 0.36, 0, 0, TAU); c.fill();
+      }
+
+      // --- a tiny survey label against the giant slab (scale contrast)
+      c.textBaseline = 'alphabetic';
+      c.textAlign = 'left';
+      c.font = MONO(10, 500);
+      c.fillStyle = rgba(BONE, 0.72);
+      const ly = Math.max(22, lay.y - 22 - w * 0.015);   // clear of the tilted slab
+      const lx = wallIn(g) + (w < 640 ? 12 : 22);   // inside the wall bands
+      if (shortL) c.font = MONO(9, 600);
+      const lw = tracked(c, shortL ? 'THE SOUTHERN GAME PROGRAMMING' : w < 640 ? 'WELL 03 ·' : 'WELL 03 · MEETUP ·', lx, ly, { track: shortL ? 1 : w < 640 ? 2 : 3 });
+      c.font = HE(13, 700);
+      c.fillStyle = GOLD;
+      if (!shortL) c.fillText('מיטאפ', lx + lw + 10, ly + 1);
+      c.font = MONO(10, 500);
+      c.fillStyle = rgba(BONE, 0.72);
+      tracked(c, w < 640 ? '21 M' : '21 M BELOW', w - lx, ly, { track: w < 640 ? 2 : 3, align: 'right' });
+
+      // --- a mark is cut, now and then, by nobody you can see
+      if (slammed && !reduced) {
         cutAcc += dt;
-        if (cutAcc > 6200) {
-          cutAcc = 0; held += 1; fresh = held;
-          audio.noise({ dur: 0.18, gain: 0.08, band: [1200, 4800] });
-          audio.noise({ dur: 0.1, gain: 0.05, band: [200, 900], delay: 0.06 });
+        if (cutAcc > 5600) {
+          cutAcc = 0;
+          cut(0.06 + Math.random() * 0.88, 0.15 + Math.random() * 0.7, t);
         }
       }
 
-      // --- the group's name, cut into the stone
-      const px = g.cx, py = g.mouthY + 64;
-      const pw = Math.min(520, g.half * 1.1), phh = 142;
-      c.save();
-      c.textAlign = 'center';
-      const pg = c.createLinearGradient(0, py - 10, 0, py + phh);
-      pg.addColorStop(0, rgba('#F7E2C2', 0.05));
-      pg.addColorStop(1, rgba('#000000', 0.22));
-      c.fillStyle = pg;
-      c.fillRect(px - pw / 2, py - 14, pw, phh);
-      c.strokeStyle = rgba('#F2EDE2', 0.14);
-      c.lineWidth = 1;
-      roughRect(c, px - pw / 2, py - 14, pw, phh, { jitter: 1.4, prng: jr });
-
-      NAME.forEach((line, i) => {
-        const size = Math.min(34, pw / 13);
-        const y = py + 24 + i * (size + 12);
-        c.font = DISPLAY(size);
-        c.fillStyle = rgba('#000000', 0.55);
-        c.fillText(line, px, y + 1.5);
-        c.fillStyle = rgba(i === 0 ? '#F2EDE2' : '#E8873A', i === 0 ? 0.82 : 0.9);
-        c.fillText(line, px, y);
-      });
-      c.restore();
-
-      // --- the tally, cut five at a time
-      c.textAlign = 'left';
-      const tx = g.left + 54, ty = g.mouthY + 236;
-      c.font = MONO(9, 500);
-      c.fillStyle = rgba('#F2EDE2', 0.45);
-      tracked(c, 'MEETS HELD · ' + held, tx, ty - 14, { track: 2.4 });
-      const perRow = 7;
-      for (let i = 0; i < Math.ceil(held / 5); i++) {
-        const n = Math.min(5, held - i * 5);
-        const gx = tx + (i % perRow) * 46;
-        const gy = ty + Math.floor(i / perRow) * 42;
-        const isFresh = fresh > 0 && i === Math.floor((held - 1) / 5);
-        group(c, gx, gy, n, isFresh ? 0.95 : 0.3 + (i / 12) * 0.14, isFresh ? '#E8873A' : '#F2EDE2');
+      // --- the slab
+      const off = slabOffset();
+      if (!slammed && (reduced || t - t0 >= DROP)) {
+        slammed = true;
+        if (!reduced) { audio.thud({ gain: 0.5 }); fx.shake(260, 9); }
       }
+      if (off > -(lay.y + lay.sh + 59)) {
+        c.save();
+        c.translate(lay.cx, lay.cy + off);
+        c.rotate(lay.rot);
+        const X = -lay.sw / 2, Y = -lay.sh / 2;
+        // drop shadow: a flat offset block, not a blur
+        c.fillStyle = rgba('#000000', 0.32);
+        c.fillRect(X + 14, Y + 18, lay.sw, lay.sh);
+        c.fillStyle = GOLD;
+        c.fillRect(X, Y, lay.sw, lay.sh);
 
-      // --- the board: next gathering
-      const bw = 248, bh = 104;
-      const bx = g.right - 54 - bw, by = g.mouthY + 232;
-      c.fillStyle = rgba('#000000', 0.3);
-      c.fillRect(bx, by, bw, bh);
-      c.strokeStyle = rgba('#E8873A', 0.5);
-      c.lineWidth = 1.2;
-      roughRect(c, bx, by, bw, bh, { jitter: 1.6, prng: jr });
-      c.font = MONO(9.5, 500);
-      c.fillStyle = rgba('#E8873A', 0.9);
-      tracked(c, 'NEXT GATHERING', bx + 16, by + 28, { track: 2.6 });
-      c.strokeStyle = rgba('#F2EDE2', 0.16);
-      c.beginPath(); c.moveTo(bx + 16, by + 40); c.lineTo(bx + bw - 16, by + 40); c.stroke();
-      c.font = MONO(9, 400);
-      c.fillStyle = rgba('#F2EDE2', 0.55);
-      tracked(c, 'DATE UNSET', bx + 16, by + 62, { track: 2.2 });
-      tracked(c, 'WATCH THE BOARD', bx + 16, by + 80, { track: 2.2 });
+        // the name, cut in navy, each line parted where the rope runs down the slab
+        const cutX = lay.rx == null ? null : lay.rx - lay.cx;
+        let by = Y + lay.pad;
+        lay.lines.forEach(([a, b], i) => {
+          const s = lay.sizes[i];
+          by += s * (i === 0 ? 0.86 : lay.lead);
+          c.font = DISPLAY(s);
+          c.fillStyle = NAVY;
+          if (cutX == null) {
+            c.textAlign = 'center';
+            c.fillText(a + ' ' + b, 0, by - s * 0.06);
+          } else {
+            c.textAlign = 'right';
+            c.fillText(a, cutX - lay.gap, by - s * 0.06);
+            c.textAlign = 'left';
+            c.fillText(b, cutX + lay.gap, by - s * 0.06);
+          }
+        });
 
-      // --- the ring of seats, worn into the floor
-      const ry = g.floorY - 34, rx = g.half * 0.5;
-      c.strokeStyle = rgba('#F2EDE2', 0.08);
-      c.lineWidth = 1;
-      c.beginPath();
-      c.ellipse(g.cx, ry, rx, rx * 0.26, 0, 0, Math.PI * 2);
-      c.stroke();
-      for (let i = 0; i < 11; i++) {
-        const a = (i / 11) * Math.PI * 2 + 0.26;
-        const sx = g.cx + Math.cos(a) * rx;
-        const sy = ry + Math.sin(a) * rx * 0.26;
-        const near = (Math.sin(a) + 1) / 2;          // seats at the front are larger
-        const sw = 14 + near * 12, sh = 7 + near * 6;
-        c.fillStyle = rgba(blend('#453526', '#000000', 0.3), 0.95);
-        c.beginPath(); c.ellipse(sx, sy, sw, sh, 0, 0, Math.PI * 2); c.fill();
-        c.fillStyle = rgba('#F7E2C2', 0.07 + near * 0.08);
-        c.beginPath(); c.ellipse(sx, sy - sh * 0.35, sw * 0.8, sh * 0.5, 0, 0, Math.PI * 2); c.fill();
-      }
+        // the rope's lane: where the link's art hangs into the slab, the slab parts for it
+        if (cutX != null && tb && tb.art && tb.art.t < lay.y + lay.sh + off) {
+          const lane = Math.max((tb.art.r - tb.art.l) / 2 + 4, lay.gap * 0.85);
+          c.fillStyle = NAVY;
+          c.fillRect(cutX - lane, Y - 2, lane * 2, lay.sh + 24);
+        }
 
-      // --- a flicker of lamp warmth over the whole room
-      if (!reduced) {
-        const f = 0.5 + 0.5 * Math.sin(t / 420) * Math.sin(t / 1130);
-        c.globalCompositeOperation = 'lighter';
-        const lg = c.createRadialGradient(g.cx, g.floorY - 60, 20, g.cx, g.floorY - 60, g.half * 0.9);
-        lg.addColorStop(0, rgba('#E8873A', 0.05 + f * 0.035));
-        lg.addColorStop(1, rgba('#E8873A', 0));
-        c.fillStyle = lg;
-        c.fillRect(g.left, g.mouthY, g.right - g.left, g.h - g.mouthY);
-        c.globalCompositeOperation = 'source-over';
+        // the scratch band: a chalked rule, then uncounted marks
+        const sTop = Y + lay.sh - lay.strip - lay.pad * 0.6;
+        c.strokeStyle = rgba(NAVY, 0.55);
+        c.lineWidth = 1.5;
+        rough(c, X + 90, sTop - 6, X + lay.sw - 90, sTop - 6, { jitter: 1.2, prng: jr });
+        const len = lay.strip * 0.7;
+        for (const m of marks) {
+          const mx = X + m.u * lay.sw, my = sTop + m.v * lay.strip;
+          const age = t - m.born;
+          const fresh = age < 1100 && age >= 0;
+          c.strokeStyle = fresh ? BONE : rgba(NAVY, 0.82);
+          c.lineWidth = fresh ? 3.2 : 2.2;
+          const L2 = len * m.l * 0.5;
+          const dx = Math.cos(m.a) * L2, dy = Math.sin(m.a) * L2;
+          rough(c, mx - dx, my - dy, mx + dx, my + dy, { jitter: 1.1, steps: 3, prng: jr });
+        }
+        c.restore();
       }
     },
 
-    dispose() { L = null; geo = null; },
+    dispose() {
+      if (L) L.canvas.removeEventListener('pointerdown', onDown);
+      L = null; geo = null; marks.length = 0;
+    },
   };
 }

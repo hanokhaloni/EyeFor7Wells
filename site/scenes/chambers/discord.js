@@ -1,204 +1,292 @@
 // WELL 02 — DISCORD — 30 m.
-// A resonant cave. Sound is the only thing that happens here, so sound is the only thing
-// you can see: a standing wave strung across the chamber between two nodes, and the
-// presences holding it up. Who is in the voice channel right now is unknowable from here,
-// so the room reports it the way a surveyor would: a count, unverified.
-// Palette: blue-black ground, water, bone.
+// A resonant cave. The rock is one flat field of violet; out of it opens a mouth, and
+// inside the mouth the cave repeats itself, arch inside arch, narrowing to a throat you
+// cannot see the end of. That nest of arches is the resonance: rings of sound travelling
+// inward, slowly. Somebody once said hello into it; the cave is still giving it back,
+// one letter shorter each time. The name is cut into the rock over the mouth, split
+// where the rope from the hole above passes through it: DIS | CORD.
+//
+// Palette, committed: cave void, violet rock, lilac.
 
-import { MONO, rgba, tracked, blend } from './_shared.js';
+import { DISPLAY, HE, MONO, rgba, tracked, mix } from './_shared.js';
 
-const CRACK = `<svg width="118" height="126" viewBox="0 0 118 126" fill="none" aria-hidden="true">
-  <path d="M59 6 L52 38 L66 52 L48 74 L62 92 L54 120" stroke="var(--key)" stroke-width="2.4"
-        stroke-linejoin="round" opacity=".95"/>
-  <path d="M59 6 L52 38 L66 52 L48 74 L62 92 L54 120" stroke="var(--key)" stroke-width="7"
-        stroke-linejoin="round" opacity=".12"/>
-  <path d="M30 40 a34 34 0 0 0 0 46" stroke="var(--key)" stroke-width="1.5" opacity=".5"/>
-  <path d="M16 28 a52 52 0 0 0 0 70" stroke="var(--key)" stroke-width="1.2" opacity=".28"/>
-  <path d="M88 40 a34 34 0 0 1 0 46" stroke="var(--key)" stroke-width="1.5" opacity=".5"/>
-  <path d="M102 28 a52 52 0 0 1 0 70" stroke="var(--key)" stroke-width="1.2" opacity=".28"/>
+// the inner edge of the frame's wall bands (the band plus its lit lip): text stays inside it
+const wallIn = (g) => (g && g.wall ? g.wall + Math.max(4, Math.round(g.wall * 0.34)) : 0);
+
+const VOID = '#0E0A24';
+const ROCK = '#5B3DF5';
+const LILAC = '#E8E1FF';
+
+const ECHO = ['HELLO', 'ELLO', 'LLO', 'LO', 'O'];
+
+const MOUTH_ART = `<svg width="70" height="58" viewBox="0 0 70 58" fill="none" aria-hidden="true">
+  <path d="M6 56 V30 A29 27 0 0 1 64 30 V56" stroke="${LILAC}" stroke-width="5"/>
+  <path d="M20 56 V34 A15 14 0 0 1 50 34 V56" stroke="${ROCK}" stroke-width="5"/>
 </svg>`;
 
-export default function make({ fx, audio }) {
-  const prng = fx.rnd(3307);
-  const reduced = !!fx.reducedMotion;
-  let L = null, geo = null;
-  let live = false, toneAcc = 0;
-
-  // five presences on the floor. Each one swells and falls on its own slow cycle;
-  // whichever is loudest at a given moment is the one holding the room.
-  const ghosts = [];
-  for (let i = 0; i < 6; i++) {
-    ghosts.push({ i, ph: prng() * 7, sp: 0.00052 + prng() * 0.0006, amp: 0.4 + prng() * 0.6, act: 0 });
+// Where the frame's rope (hole -> link) crosses the band [ya, yb]: [minX, maxX], or null.
+// Mirrors the frame's curve (a straight drop, or a bend to an off-centre link), padded for
+// its sway and thickness, so the name can be cut around it.
+function ropeBand(g, ya, yb) {
+  if (!g || !g.hole) return null;
+  const x0 = g.hole.x, y0 = g.hole.y + g.hole.r * 0.4;
+  const x1 = g.rope ? g.rope.x : x0, y1 = g.rope ? g.rope.y : g.h * 0.8;
+  if (yb < y0 || ya > y1) return null;
+  if (Math.abs(x1 - x0) < 2) return [x0 - 7, x0 + 7];
+  const d = y1 - y0;
+  const P = [[x0, y0], [x0, y0 + d * 0.55], [x1, y1 - d * 0.3], [x1, y1]];
+  let lo = Infinity, hi = -Infinity;
+  for (let i = 0; i <= 60; i++) {
+    const t = i / 60, u = 1 - t;
+    const k = [u * u * u, 3 * u * u * t, 3 * u * t * t, t * t * t];
+    const y = k[0] * P[0][1] + k[1] * P[1][1] + k[2] * P[2][1] + k[3] * P[3][1];
+    if (y < ya || y > yb) continue;
+    const x = k[0] * P[0][0] + k[1] * P[1][0] + k[2] * P[2][0] + k[3] * P[3][0];
+    lo = Math.min(lo, x); hi = Math.max(hi, x);
   }
-  const modes = [
-    { k: 1, a: 1.0, w: 0.0017, ph: 0 },
-    { k: 2, a: 0.42, w: 0.0029, ph: 1.7 },
-    { k: 3, a: 0.26, w: 0.0043, ph: 3.1 },
-    { k: 5, a: 0.13, w: 0.0071, ph: 5.2 },
-  ];
+  return lo <= hi ? [lo - 7, hi + 7] : null;
+}
+
+export default function make({ fx, audio }) {
+  const reduced = !!fx.reducedMotion;
+  let L = null, geo = null, live = false, toneAcc = 0;
+  let mouth = null, mouthKey = '';
+  // the link's top on screen (measured; the frame places it): the echoes stop above it
+  let linkTop = null, takeAt = -1e9, artBox = null;
+  const takeTop = (t) => {
+    if (t - takeAt > 400) {
+      takeAt = t;
+      const a = document.querySelector('.ch[data-well="discord"] .ch-take');
+      const r = a && a.getBoundingClientRect();
+      linkTop = r && r.height ? r.top : null;
+      const art = a && a.querySelector('.ch-take__art');
+      const q = art && art.getBoundingClientRect();
+      artBox = q && q.height ? { l: q.left, r: q.right, t: q.top } : null;
+    }
+    return linkTop;
+  };
+
+  // The mouth outline, in absolute px: a rough-cut arch on a flat floor. Seeded, so it is
+  // the same cave every visit; rebuilt only when the viewport changes.
+  function buildMouth(g) {
+    const key = g.w + 'x' + g.h;
+    if (key === mouthKey) return mouth;
+    mouthKey = key;
+    const r = fx.rnd(3307);
+    const mob = g.w < 700;
+    const cx = g.w / 2;
+    const hw = g.w * (mob ? 0.45 : 0.33);
+    // the crown sits low enough that the name fits under the hole you fell through
+    const top = g.h * (mob ? 0.34 : 0.4);
+    const floor = g.h * 0.96;
+    const spring = mix(top, floor, mob ? 0.42 : 0.5);   // where the walls go vertical
+    const pts = [];
+    pts.push([cx - hw * 1.02, floor]);
+    const N = 28;
+    for (let i = 0; i <= N; i++) {
+      const a = Math.PI + (i / N) * Math.PI;         // left wall, over the crown, right wall
+      const j = i === 0 || i === N ? 0 : (r() - 0.5) * hw * 0.07;
+      const x = cx + Math.cos(a) * (hw + j);
+      const y = spring + Math.sin(a) * (spring - top + j * 0.6);
+      pts.push([x, y]);
+    }
+    pts.push([cx + hw * 1.02, floor]);
+    // the throat: arches shrink toward a point low in the mouth
+    const vp = [cx, mix(top, floor, 0.66)];
+    mouth = { pts, cx, hw, top, floor, spring, vp, mob };
+    return mouth;
+  }
+
+  function mouthPath(c, m, s, dy) {
+    c.beginPath();
+    m.pts.forEach(([x, y], i) => {
+      const X = m.vp[0] + (x - m.vp[0]) * s;
+      const Y = m.vp[1] + (y - m.vp[1]) * s + dy;
+      i ? c.lineTo(X, Y) : c.moveTo(X, Y);
+    });
+    c.closePath();
+  }
 
   return {
+    // the cave replaces the vault, the title, the depth readout, the index and the notes
+    // and the flat wall bands: everything here is rock, edge to edge
+    frame: { vault: false, gauge: false, notes: false, index: false, title: false, air: false, walls: false },
     pal: {
-      ink: '#060A14', stone: '#242C3E', stoneDark: '#05070E',
-      key: '#3BE8B0', cone: '#B9CEFF', dust: '#CBD9F2',
+      ink: VOID, stone: ROCK, stoneDark: VOID,
+      key: ROCK, keyText: LILAC, cone: ROCK, bone: LILAC, dust: LILAC,
     },
-    takeHz: 330,
+    takeHz: 220,
     take: {
-      label: 'speak into the crack',
+      verb: 'SPEAK INTO THE CAVE',
+      cta: 'JOIN ON DISCORD',
+      label: 'speak into the cave',
       host: 'discord.gg',
-      art: CRACK,
-      pos: { left: '50%', top: '68%' },
+      art: MOUTH_ART,
+      pos: {
+        // a short landscape phone sends the link to the bottom (the frame clamps it above
+        // the exits), leaving the room above it for the hero
+        get top() { return typeof innerHeight === 'number' && innerHeight < 500 && innerWidth > innerHeight ? '92%' : '80%'; },
+        left: '50%',
+      },
+      variant: 'hang',
     },
-    ui: `
-      <div class="nt" style="left:26px;bottom:120px">
-        <b>acoustic · live</b>
-        rt60 ≈ 4.2 s<br>
-        <em>the room answers back</em>
-      </div>
-      <div class="nt nt--r" style="right:26px;bottom:120px">
-        <b>in voice · 06</b>
-        count unverified<br>
-        <em>presence inferred from sound</em>
-      </div>`,
+    ui: `<span style="position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap">Discord · דיסקורד · the voice channel · 30 m</span>`,
 
     init(env) { geo = env.geo; L = env.layer(3); },
 
     onLanded() {
       live = true;
-      audio.tone(110, { dur: 1.6, type: 'triangle', gain: 0.08, slideTo: 164 });
+      // the cave answers the landing: one low call, then its echoes
+      audio.tone(110, { dur: 1.2, type: 'triangle', gain: 0.08, slideTo: 146 });
+      for (let i = 1; i <= 3; i++) {
+        audio.tone(146, { dur: 0.9, type: 'sine', gain: 0.05 / i, delay: 0.5 * i });
+      }
     },
 
     update(dt, t) {
       if (!L) return;
       const g = geo();
       const c = L.ctx2d;
-      c.clearRect(0, 0, g.w, g.h);
-      const T = reduced ? 8000 : t;
+      const { w, h } = g;
+      if (!(w >= 1 && h >= 1)) return;
+      const m = buildMouth(g);
+      const e = fx.ease.outCubic(Math.min(1, g.fallP));
+      const dy = (1 - e) * h * 0.9;                    // the cave rises into view as you fall
 
-      const x0 = g.left + 54, x1 = g.right - 54, span = x1 - x0;
-      const cy = g.mouthY + (g.floorY - g.mouthY) * 0.46;
+      // --- the rock: everything is rock
+      c.fillStyle = ROCK;
+      c.fillRect(0, 0, w, h);
 
-      // who is holding the room right now
-      let loud = 0, loudI = 0;
-      for (const gh of ghosts) {
-        gh.act = Math.max(0, Math.sin(T * gh.sp + gh.ph)) ** 2 * gh.amp;
-        if (gh.act > loud) { loud = gh.act; loudI = gh.i; }
+      // --- the name cut into the rock above the mouth
+      c.textBaseline = 'alphabetic';
+      const nameY = m.top - (m.mob ? h * 0.035 : h * 0.03);
+      const inL = wallIn(g) + (m.mob ? 12 : 18);   // inside the frame's wall bands
+      const inR = w - inL;
+      // the cap line stays under the top fifth (on a short screen: just under the hole)
+      const sky = h < 520 && g.hole ? g.hole.y + g.hole.r + 6 : h * 0.2;
+      let fs = Math.min((m.top - h * 0.04) * 0.9, (nameY - sky) / 0.84);
+      c.font = DISPLAY(fs);
+      const nw = c.measureText('DISCORD').width;
+      const maxW = Math.min(w * (m.mob ? 0.84 : 0.62), inR - inL);
+      if (nw > maxW) { fs *= maxW / nw; c.font = DISPLAY(fs); }
+      // the rope passes through the name: cut it there, DIS | CORD
+      let band = ropeBand(g, nameY - fs * 0.9, nameY + 4);
+      // on a short screen the link's art hangs up into the name: part the name around it too
+      takeTop(t);
+      if (artBox && artBox.t < nameY + 4) {
+        band = band ? [Math.min(band[0], artBox.l - 2), Math.max(band[1], artBox.r + 2)] : [artBox.l - 2, artBox.r + 2];
       }
-      const drive = 0.3 + loud * 0.85;
-
-      // --- the standing wave
-      const A = (g.floorY - g.mouthY) * 0.23 * drive;
-      const wave = (x) => {
-        const u = (x - x0) / span;
-        let y = 0;
-        for (const m of modes) y += m.a * Math.sin(m.k * Math.PI * u) * Math.sin(T * m.w + m.ph);
-        return cy + y * A;
-      };
-
-      for (const pass of [{ lw: 9, a: 0.07 }, { lw: 3.2, a: 0.22 }, { lw: 1.4, a: 0.95 }]) {
-        c.strokeStyle = rgba('#3BE8B0', pass.a);
-        c.lineWidth = pass.lw;
-        c.beginPath();
-        for (let x = x0; x <= x1; x += 3) {
-          const y = wave(x);
-          x === x0 ? c.moveTo(x, y) : c.lineTo(x, y);
-        }
-        c.stroke();
+      const nameBase = nameY + dy;
+      c.fillStyle = VOID;
+      if (band) {
+        const gap = Math.max(6, fs * 0.05);
+        c.font = DISPLAY(100);
+        const wa = c.measureText('DIS').width / 100, wb = c.measureText('CORD').width / 100;
+        fs = Math.min(fs, (band[0] - gap - inL) / wa, (inR - band[1] - gap) / wb);
+        c.font = DISPLAY(fs);
+        c.textAlign = 'right';
+        c.fillText('DIS', band[0] - gap, nameBase);
+        c.textAlign = 'left';
+        c.fillText('CORD', band[1] + gap, nameBase);
+      } else {
+        c.textAlign = 'center';
+        c.fillText('DISCORD', m.cx, nameBase);
       }
-      // its shadow, a half beat behind
-      c.strokeStyle = rgba('#F2EDE2', 0.09);
-      c.lineWidth = 1;
+
+      // small, against the giant name: Hebrew and the survey line, flanking the crown,
+      // each kept to its own side of the rope
+      const lab = m.mob ? 10 : 12;
+      c.font = HE(m.mob ? 18 : 30, 800);
+      c.textAlign = 'left';
+      const hx = m.mob ? inL : Math.max(w * 0.045, inL);
+      const hy = m.mob ? nameBase + 34 : m.spring + dy;
+      c.fillText('דיסקורד', hx, hy);
+      c.font = MONO(lab, 600);
+      if (m.mob) {
+        // two short lines right of the rope
+        const lb = ropeBand(g, nameY + 10, nameY + 50);
+        const room = inR - (lb ? lb[1] + 6 : w / 2);
+        const tr = room < 150 ? 0.6 : 1.4;
+        c.font = MONO(room < 150 ? 9 : lab, 600);
+        // tucked close under the name: the crown of the mouth is right below
+        tracked(c, '30 M', inR, nameBase + 15, { track: tr, align: 'right' });
+        tracked(c, 'THE VOICE CHANNEL', inR, nameBase + 28, { track: tr, align: 'right' });
+      } else {
+        // two short lines, so the label stays on the rock clear of the mouth
+        c.font = DISPLAY(30);
+        c.textAlign = 'right';
+        const rx = Math.min(w * 0.955, inR);
+        c.fillText('30 M', rx, m.spring + dy - 30);
+        c.font = MONO(lab, 600);
+        c.textAlign = 'left';                            // tracked() places each glyph itself
+        tracked(c, 'THE VOICE CHANNEL', rx, m.spring + dy, { track: 2.4, align: 'right' });
+      }
+
+      // --- the mouth, and the cave repeating itself inside it
+      c.fillStyle = VOID;
+      mouthPath(c, m, 1, dy);
+      c.fill();
+
+      c.save();
+      mouthPath(c, m, 1, dy);
+      c.clip();
+      const R = 0.8;                                    // each arch is 80% of the last
+      const u = reduced ? 0.35 : t / 5200;              // sound travelling inward
+      const ph = u - Math.floor(u);
+      const n = Math.floor(u);
+      for (let k = 1; k <= 13; k++) {
+        const s = Math.pow(R, k - ph);
+        if (s < 0.04) break;
+        const lit = ((k - n) % 2 + 2) % 2 === 0;
+        c.fillStyle = lit ? rgba(ROCK, 0.62 * Math.pow(s, 0.9)) : VOID;
+        mouthPath(c, m, s, dy);
+        c.fill();
+      }
+      // the throat: past the last arch it is just dark
+      c.restore();
+
+      // --- the echo, one letter shorter each time it comes back
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      // stacked down the throat, each echo smaller and fainter than the last
+      let size = m.hw * (m.mob ? 0.4 : 0.3);
+      let y = m.top + (m.spring - m.top) * (m.mob ? 0.42 : 0.36) + dy;
+      const lt = takeTop(t);
+      // a short screen: the first echo shrinks to clear the link, and the rest stop above it
+      if (lt != null && h < 520) size = Math.max(14, Math.min(size, (lt - 6 - (y - dy)) / 0.45));
+      for (let i = 0; i < ECHO.length; i++) {
+        // the echoes die away above the link, never behind it
+        const stop = artBox ? Math.max(lt, artBox.t) : lt;
+        if (lt != null && y - dy + size * 0.45 > stop - 4) break;
+        c.font = DISPLAY(size);
+        c.fillStyle = rgba(LILAC, [0.95, 0.55, 0.34, 0.2, 0.12][i]);
+        c.fillText(ECHO[i], m.cx, y);
+        const next = size * 0.56;
+        y += size * 0.42 + next * 0.42 + size * 0.06;
+        size = next;
+      }
+
+      // --- the floor line at the lip of the mouth
+      c.strokeStyle = rgba(LILAC, 0.5);
+      c.lineWidth = 2;
       c.beginPath();
-      for (let x = x0; x <= x1; x += 4) {
-        const u = (x - x0) / span;
-        let y = 0;
-        for (const m of modes) y += m.a * Math.sin(m.k * Math.PI * u) * Math.sin(T * m.w + m.ph - 0.5);
-        const yy = cy - y * A * 0.5;
-        x === x0 ? c.moveTo(x, yy) : c.lineTo(x, yy);
-      }
+      c.moveTo(m.cx - m.hw * 1.02, m.floor + dy);
+      c.lineTo(m.cx + m.hw * 1.02, m.floor + dy);
       c.stroke();
 
-      // --- nodes: where the wave is pinned. Measured off a rule near the ceiling.
-      const ruleY = g.mouthY + 78;
-      c.font = MONO(8.5, 500);
-      c.textAlign = 'center';
-      c.strokeStyle = rgba('#F2EDE2', 0.16);
-      c.lineWidth = 1;
-      c.beginPath(); c.moveTo(x0, ruleY); c.lineTo(x1, ruleY); c.stroke();
-      for (let k = 0; k <= 4; k++) {
-        const x = x0 + (span * k) / 4;
-        c.strokeStyle = rgba('#F2EDE2', 0.22);
-        c.beginPath(); c.moveTo(x, ruleY - 6); c.lineTo(x, ruleY + 6); c.stroke();
-        c.fillStyle = rgba('#F2EDE2', 0.34);
-        tracked(c, (82 * (k + 1)) + ' HZ', x, ruleY - 13, { track: 1.6, align: 'center' });
-        // the node line, dropped to the floor
-        c.strokeStyle = rgba('#F2EDE2', 0.07);
-        c.setLineDash([2, 10]);
-        c.beginPath(); c.moveTo(x, ruleY + 8); c.lineTo(x, g.floorY); c.stroke();
-        c.setLineDash([]);
-      }
-      c.strokeStyle = rgba('#F2EDE2', 0.12);
-      c.setLineDash([4, 8]);
-      c.beginPath(); c.moveTo(x0, cy); c.lineTo(x1, cy); c.stroke();
-      c.setLineDash([]);
-
-      // --- presences
-      const fh = g.floorY;
-      for (const gh of ghosts) {
-        const x = x0 + span * ((gh.i + 0.5) / ghosts.length);
-        const on = gh.i === loudI;
-        const a = 0.16 + gh.act * 0.55;
-        const top = fh - 150 - gh.act * 70;
-        const col = on ? '#3BE8B0' : '#F2EDE2';
-
-        for (const band of [{ w: 30, m: 0.3 }, { w: 17, m: 0.55 }, { w: 6, m: 1 }]) {
-          const cg = c.createLinearGradient(0, top, 0, fh);
-          cg.addColorStop(0, rgba(col, 0));
-          cg.addColorStop(1, rgba(col, a * 0.5 * band.m));
-          c.fillStyle = cg;
-          c.fillRect(x - band.w / 2, top, band.w, fh - top);
-        }
-
-        c.strokeStyle = rgba(col, 0.2 + gh.act * 0.6);
-        c.lineWidth = on ? 1.6 : 1;
-        c.beginPath();
-        c.ellipse(x, fh + 4, 26 + gh.act * 26, (26 + gh.act * 26) * 0.26, 0, 0, Math.PI * 2);
-        c.stroke();
-        if (gh.act > 0.25) {
-          c.strokeStyle = rgba(col, (gh.act - 0.25) * 0.4);
-          c.beginPath();
-          c.ellipse(x, fh + 4, 50 + gh.act * 60, (50 + gh.act * 60) * 0.26, 0, 0, Math.PI * 2);
-          c.stroke();
-        }
-        c.fillStyle = rgba(col, 0.25 + gh.act * 0.7);
-        c.fillRect(x - 1, top - 10, 2, 10);
-
-        c.font = MONO(8, 500);
-        c.fillStyle = rgba(col, on ? 0.85 : 0.32);
-        tracked(c, on ? 'SPEAKING' : 'IDLE', x, fh + 26, { track: 1.5, align: 'center' });
-      }
-
-      // --- the room answers: a tone when the speaker changes
-      if (live && !reduced) {
+      // --- the room answers, now and then (sound only, never motion)
+      if (live) {
         toneAcc += dt;
-        if (toneAcc > 4200) {
+        if (toneAcc > 7000) {
           toneAcc = 0;
-          audio.tone(82 * (1 + loudI), { dur: 0.5, type: 'sine', gain: 0.05 });
+          audio.tone(98, { dur: 0.7, type: 'sine', gain: 0.04 });
+          audio.tone(98, { dur: 0.7, type: 'sine', gain: 0.02, delay: 0.6 });
         }
       }
-
-      // --- readout
-      c.textAlign = 'left';
-      c.font = MONO(9, 500);
-      c.fillStyle = rgba('#3BE8B0', 0.5);
-      tracked(c, 'STANDING WAVE · MODE ' + (loudI + 1) + ' DOMINANT', x0, g.mouthY + 46, { track: 2.2 });
-      c.strokeStyle = rgba('#3BE8B0', 0.18);
-      c.lineWidth = 1;
-      c.beginPath();
-      c.moveTo(x0, g.mouthY + 54); c.lineTo(x0 + 240, g.mouthY + 54); c.stroke();
-      c.fillStyle = rgba(blend('#3BE8B0', '#F2EDE2', 0.5), 0.3);
     },
 
-    dispose() { L = null; geo = null; },
+    resize() { mouthKey = ''; },
+
+    dispose() { L = null; geo = null; mouth = null; },
   };
 }

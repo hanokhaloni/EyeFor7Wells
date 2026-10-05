@@ -8,6 +8,24 @@ export const MAX_D = 70;
 // 0 at the shallowest well, 1 at the deepest.
 export const depthT = (d) => Math.max(0, Math.min(1, ((d ?? 20) - MIN_D) / (MAX_D - MIN_D)));
 
+// Night palette pieces the frame shares with the surface.
+export const MOUTH = '#060403';
+export const SAND = '#DEA668';
+
+// The hole you fell through, seen from the floor: a flat sand disc high in the frame,
+// big at 9 m, tiny at 70 m (geometric between the two along depthT).
+export function holeOf(w, h, d) {
+  const m = Math.min(w, h);
+  const big = Math.max(20, Math.min(84, m * 0.075));
+  const tiny = Math.max(4, Math.min(10, m * 0.009));
+  const r = big * Math.pow(tiny / big, depthT(d));
+  const y = Math.max(r + 14, Math.min(h * 0.085, 96));
+  return { x: w / 2, y, r };
+}
+
+// Width of each hard wall band: the shaft narrows the deeper the well.
+export const wallOf = (w, d) => Math.round(Math.max(10, Math.min(120, w * mix(0.035, 0.07, depthT(d)))));
+
 // How much night-sky light still reaches this depth.
 export const lightOf = (d) => {
   const t = depthT(d);
