@@ -1,8 +1,8 @@
 {
-  "updated": "2026-10-04",
-  "status": "wave 1 — builders running",
+  "updated": "2026-10-05",
+  "status": "wave 3 done · final critic 6.5/10 → fixes in · both code reviews clear (12 bugs found, 12 fixed) · smoke-clean at 3 viewports",
   "maxWidth": 1000,
-  "blurb": "An original site for 7 Wells Indies, the Be'er-Sheva indie game dev community, built with the creative attitude of the classic Eye4U Flash site as the bar. Be'er Sheva means \"well of seven\" — so the site is a night desert with seven wells you descend into. Six are the community's real channels. The seventh is dry.",
+  "blurb": "An original site for 7 Wells Indies, the Be'er-Sheva indie game dev community, built with the creative attitude of the classic Eye4U Flash site as the bar. Be'er Sheva means \"well of seven\" — so the site is a night desert with seven wells you descend into. Six are the community's real channels. The seventh is dry. Every image below is a real screenshot or a contact sheet of real frames from the running page.",
   "waves": [
     {
       "n": "wave 0",
@@ -14,10 +14,16 @@
           "title": "What Eye4U actually does",
           "state": "done",
           "rev": 1,
-          "note": "Captured live, not from memory. The intro is a performance edited on beats: enormous flat vector shapes slamming through a full-bleed frame, three colours at a time, a 9px 'skip' against a screen-filling starburst. The nav is a diagram, not a menu — a photographic eye looks at an arc of beads. Three doors only. Takeaways: stage-not-document, giant flat shapes, cut-on-beat, committed palettes, identity-as-character, scale contrast, few doors.",
+          "note": "Captured live, not from memory. The intro is a performance edited on beats: enormous flat vector shapes slamming through a full-bleed frame, three colours at a time, a 9px 'skip' against a screen-filling starburst. The nav is a diagram, not a menu — a photographic eye looks at an arc of beads. Three doors only. Takeaways we kept: stage-not-document, giant flat shapes, cut-on-beat, committed palettes, identity-as-character, scale contrast, few doors. Takeaways we refused: the eye, the orange-on-white, the bead arc — those are Eye4U's.",
           "shots": [
-            { "src": "ref/shots/e10-intro-motion.png", "cap": "Eye4U intro, 8 frames — logo winks, then flat colour slams the frame" },
-            { "src": "ref/shots/e13-nav-motion.png", "cap": "Eye4U main nav — an eye looking at a bead-arc. Navigation as diagram." }
+            {
+              "src": "ref/shots/e10-intro-motion.png",
+              "cap": "Eye4U intro, 8 real frames — the logo winks, then flat colour slams the frame"
+            },
+            {
+              "src": "ref/shots/e13-nav-motion.png",
+              "cap": "Eye4U main nav — an eye looking at a bead-arc. Navigation as diagram, three doors."
+            }
           ]
         },
         {
@@ -25,7 +31,98 @@
           "title": "Capture harness + engine substrate",
           "state": "done",
           "rev": 1,
-          "note": "tools/cap.mjs drives the real running site: screenshots, webm clips, and tiled contact sheets of N frames so motion can be judged as a storyboard. Engine is vanilla ES modules — scene router with hash deep-linking, WebAudio synth voices (no audio files), canvas layer helper, seeded PRNG, film grain, persisted visitor state. No build step, no framework, no external assets beyond Google Fonts."
+          "note": "tools/cap.mjs drives the real running site: screenshots, webm clips, and tiled contact sheets of N frames so motion can be judged as a storyboard rather than described. Engine is vanilla ES modules — scene router with hash deep-linking, WebAudio synth voices (zero audio files), canvas layer helper, seeded PRNG, film grain, persisted visitor state. No build step, no framework, no external assets beyond Google Fonts."
+        }
+      ]
+    },
+    {
+      "n": "wave 1",
+      "title": "Four pieces built in parallel, then judged",
+      "summary": "Intro, surface hub, six chambers and the seventh well were built simultaneously against a shared contract, then handed to fresh critics with clean context who had to play the running site before scoring it.",
+      "pieces": [
+        {
+          "id": "intro",
+          "title": "Title sequence — eight beats",
+          "state": "done",
+          "rev": 3,
+          "note": "A performance on a cue timeline, not a loading screen. A bone horizon with seven survey ticks; a sand disc taller than the frame slamming up over rust ground; seven marks struck on hot rust, then inverted to black and falling open into holes; the title; then the beat the whole site rests on — באר שבע glossed into SEVEN / WELL. A water-green drop fills the 7. Then the camera drops down a shaft into the hub. Skippable by any key or click; a repeat visit gets a 1.7s version.",
+          "gap": "Rev 2 critic: 6.5/10, with a slow card hold, a hairline opening and an ending that never covered the frame. Rev 3 opens with a full-width slab, punches one hole to fill the frame, slams a frame-height 7, cuts WELL / SEVEN at ~4.5s, and ends by falling into a black 7 opened inside the green one, then hard-cuts onto the night surface. Hand-off 6.75s. A frozen or background tab no longer burns the first visit.",
+          "shots": [
+            {
+              "src": "capture/intro/rev3/desk-a.png",
+              "cap": "Rev 3, first half"
+            },
+            {
+              "src": "capture/intro/rev3/desk-b.png",
+              "cap": "Rev 3, second half: the gloss and the fall into the 7"
+            },
+            {
+              "src": "capture/intro/rev3/phone-a.png",
+              "cap": "Rev 3 at 390x844"
+            }
+          ]
+        },
+        {
+          "id": "surface",
+          "title": "The surface — hub",
+          "state": "done",
+          "rev": 4,
+          "note": "A night desert field seen from above. Seven wells, placed by seeded PRNG off hand-picked anchors so it is identical every load but never a grid or a ring. Mouth radius is driven by real depth — Instagram at 9m is a pinprick, Facebook at 70m is a crater. You carry a lamp; a chalk triangulation net with bearings and distances links the known wells. Full keyboard nav with real aria-labels. The seventh refuses to stay put and subtracts light instead of reflecting it.",
+          "gap": "Rev 3 critic: 6/10, \"the boldness of the bar but none of the night: a kraft-paper infographic at noon\". Rev 4 flips the values onto a site-wide night palette: warm-ink ground, dark-ochre wadi, sand only where the lamp falls. Measured with no lamp: names 17.5:1, mouth lips 8.5:1, wadi 1.7:1. Idle breathes in hard cuts, the seventh must be earned, and the drop is the mouth swallowing the screen.",
+          "shots": [
+            {
+              "src": "capture/surface/rev4/20-hover-youtube.png",
+              "cap": "Rev 4: night. The lamp is the event; names and lit lips hold without it."
+            },
+            {
+              "src": "capture/surface/rev3/01-landing.png",
+              "cap": "Rev 3: bold and flat, but noon"
+            },
+            {
+              "src": "capture/surface/rev2-land.png",
+              "cap": "Rev 2: warmer, still a survey HUD"
+            }
+          ]
+        },
+        {
+          "id": "seventh",
+          "title": "The seventh well — the secret",
+          "state": "done",
+          "rev": 3,
+          "note": "A dowsing rod you carry across a dry plot. It twitches toward buried water and prints a live moisture reading; you strike to sink a pit. Six strikes on water open six well-mouths named in Hebrew after the six real channels. When the ring closes the rod goes dead and six lines converge on the one place you never dowsed — the dry shaft in the middle. The seventh well is the ground you have been standing beside the whole time, and you dig it yourself. Misses leave a chalk × with its moisture value, so the field becomes a map you can triangulate from. Solvable mouse-only or keyboard-only, and fully solvable with sound muted.",
+          "gap": "Rev 2 critic: 7/10, solvable blind by mouse and keyboard. Rev 3: only a clean tap strikes on touch, screen-reader readings are never stale, the rod and gauge are 2.5x bigger, the six converging lines are bold, the angles are reseeded per visit so it cannot be memorised, and it moves onto the night palette. Bots solve 7/7 by mouse (95 actions), keyboard (176), touch at 390 (68) and touch at 320 (41).",
+          "shots": [
+            {
+              "src": "capture/seventh/rev3/mouse-2-first.png",
+              "cap": "Dowsing: the gauge and its WATER line"
+            },
+            {
+              "src": "capture/seventh/rev3/mouse-4-payoff.png",
+              "cap": "The payoff"
+            }
+          ]
+        },
+        {
+          "id": "chambers",
+          "title": "The six chambers",
+          "state": "done",
+          "rev": 3,
+          "note": "One room per real channel, each entered by falling down a shaft and landing. Shared stone frame — depth readout, the circle of night sky far above, the way back up — with a different room behind it per well: voices carrying down the shallow WhatsApp shaft at 12m, a resonant cave for Discord at 30m, scratched gathering marks for Meetup at 21m, a projection chamber for YouTube at 44m, shimmering image-plates for Instagram at 9m, and Facebook at 70m as the oldest and nearly dark.",
+          "gap": "Rev 2 critic: 6.5/10, with the template and invented facts gone but the depth lost too. Rev 3: every room hangs from the hole you fell through, a sand disc that shrinks with real depth, on a rope down to the link; wall bands crop each hero; each room has its own link layout. The frame was hardened: no leaked canvases, the link clears the exits at every viewport, and nothing navy or flashing on entry.",
+          "shots": [
+            {
+              "src": "capture/chambers/rev3/sheet-d.png",
+              "cap": "Rev 3, all six rooms at 1440x900"
+            },
+            {
+              "src": "capture/_cut/sheet-390.png",
+              "cap": "Final, 390x844"
+            },
+            {
+              "src": "capture/_cut/sheet-568.png",
+              "cap": "Final, phone landscape 568x320: every room and the seventh"
+            }
+          ]
         }
       ]
     }

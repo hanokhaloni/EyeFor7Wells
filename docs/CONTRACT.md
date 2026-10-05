@@ -146,3 +146,31 @@ chamber must work.
 
 It runs, it does not throw, it holds framerate, it looks like the brief, and it survives
 a critic who screenshots it. Capture proof with `node tools/cap.mjs` before you report.
+
+## Chamber room contract — rev 2 additions (2026-10-04)
+
+A room module's returned object may also carry:
+
+```js
+frame: { vault, gauge, notes, index, title, air },  // booleans, default true; false = the frame skips that piece (air = light column + vignette)
+take:  { verb, cta, label, host, art, pos },   // verb = big display word; cta defaults to 'JOIN ON ' + NAME
+```
+
+- The link is the heaviest element in the room after the name, and is visible within 1.5s of entering at every viewport.
+- The frame no longer shows a "% LIGHT" readout; depth in metres stays.
+- **No invented facts.** No member counts, meetup tallies, "LIVE" states, dated posts or community history unless verified. Atmosphere is fine; data-shaped fiction is not.
+
+## Site night palette (2026-10-05)
+
+Decided after surface rev 1 (darkness as content, mouths invisible) and rev 3 (bold, but noon) both failed. The fills are flat; light is the event and the ground is the mystery.
+
+| token | hex | use |
+|---|---|---|
+| ground | `#1B1410` | warm ink night ground; the intro's dark beats too |
+| wadi | `#5A3418` | dark ochre, hard edge, no stroke |
+| sand | `#DEA668` | light: only where the lamp falls, and lit lips |
+| mouth | `#060403` | well mouths, the black mouth that ends the intro |
+| bone | `#F2EDE2` | type |
+| accent | `#FF5C14` | glints, focus, the seventh: nowhere else |
+
+Anti-mud floor (measured): names ≥7:1 without the lamp, every mouth's rim ≥3:1 against the ground, wadi ≥1.6:1 against the ground. The routing hard cut is `ctx.go(id, payload, { cut: true })`.
