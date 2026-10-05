@@ -1,9 +1,9 @@
 /* 7 Wells — palette, type, and the shared primitives every scene can rely on. */
 
 :root {
-  --night:   #0B0E1A;
-  --night-2: #141A2E;
-  --deep:    #050710;
+  --night:   #1B1410;   /* warm ink: the site night ground (CONTRACT: night palette) */
+  --night-2: #5A3418;   /* wadi: dark ochre */
+  --deep:    #060403;   /* well mouth */
   --bone:    #F2EDE2;
   --sand:    #E8873A;
   --rust:    #B8341F;
@@ -48,6 +48,8 @@ body.show-cursor { cursor: auto; }
   animation: scene-out 400ms cubic-bezier(0.6, 0, 0.9, 0.4) both;
   pointer-events: none;
 }
+/* router go(id, payload, { cut: true }): lands fully opaque on the next frame */
+.scene--cut { animation: none; }
 @keyframes scene-in  { from { opacity: 0; } to { opacity: 1; } }
 @keyframes scene-out { from { opacity: 1; } to { opacity: 0; } }
 

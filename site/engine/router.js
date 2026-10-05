@@ -25,9 +25,10 @@ export function parseHash(h = location.hash) {
 export function makeRouter({ stage, ctxBase, onChange }) {
   let current = null;       // { id, mod, root }
   let busy = false;
+  let queued = null;         // the latest go() that arrived mid-transition; run after it
 
   async function go(id, payload = {}, opts = {}) {
-    if (busy) return;
+    if (busy) { queued = [id, payload, opts]; return; }
     if (!ROUTES[id]) { console.warn('[router] unknown scene', id); return; }
     busy = true;
     try {
@@ -35,13 +36,16 @@ export function makeRouter({ stage, ctxBase, onChange }) {
 
       if (current) {
         try { current.mod.exit && current.mod.exit(); } catch (e) { console.warn('[router] exit', e); }
-        current.root.classList.add('scene--leaving');
         const leaving = current.root;
-        setTimeout(() => leaving.remove(), 420);
+        if (opts.cut) leaving.remove();   // hard cut: no cross-fade, no frame of bare stage
+        else {
+          leaving.classList.add('scene--leaving');
+          setTimeout(() => leaving.remove(), 420);
+        }
       }
 
       const root = document.createElement('div');
-      root.className = 'scene';
+      root.className = opts.cut ? 'scene scene--cut' : 'scene';
       root.dataset.scene = id;
       stage.appendChild(root);
 
@@ -49,7 +53,7 @@ export function makeRouter({ stage, ctxBase, onChange }) {
         ...ctxBase,
         root,
         payload,
-        go: (nid, p) => go(nid, p),
+        go: (nid, p, o) => go(nid, p, o),   // o.cut: hard cut, no cross-fade · o.replace: redirect, no new history entry
         get W() { return window.innerWidth; },
         get H() { return window.innerHeight; },
       };
@@ -59,7 +63,7 @@ export function makeRouter({ stage, ctxBase, onChange }) {
 
       const target = hashFor(id, payload);
       if (!opts.fromHash && location.hash !== target) {
-        history.pushState({ id, payload }, '', target);
+        history[opts.replace ? 'replaceState' : 'pushState']({ id, payload }, '', target);
       }
 
       try { await mod.enter(ctx); } catch (e) { console.error('[scene ' + id + '] enter failed', e); }
@@ -68,6 +72,11 @@ export function makeRouter({ stage, ctxBase, onChange }) {
       console.error('[router] failed to load scene', id, e);
     } finally {
       busy = false;
+      if (queued) {
+        const q = queued; queued = null;
+        // a double-trigger for the scene we just landed in is not a navigation
+        if (hashFor(q[0], q[1]) !== hashFor(id, payload)) go(...q);
+      }
     }
   }
 

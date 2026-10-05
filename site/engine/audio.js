@@ -45,6 +45,7 @@ export function makeAudio(bus) {
     filt.type = 'lowpass';
     filt.frequency.value = spec.band;
     g.connect(filt).connect(master);
+    const lfos = [];   // stopped with the drone, or they run forever
     const nodes = spec.freqs.map((f, i) => {
       const o = actx.createOscillator();
       o.type = i === 0 ? 'sine' : 'triangle';
@@ -56,12 +57,13 @@ export function makeAudio(bus) {
       lg.gain.value = 1.4 + i;
       lfo.connect(lg).connect(o.detune);
       lfo.start();
+      lfos.push(lfo);
       o.connect(g);
       o.start();
       return o;
     });
     g.gain.setTargetAtTime(spec.gain, actx.currentTime, 1.2);
-    drone = { name, nodes, gain: g };
+    drone = { name, nodes: nodes.concat(lfos), gain: g };
   };
 
   const api = {
